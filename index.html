@@ -379,6 +379,7 @@ body{
   </div>
   <div class="bar-right">
     <span class="bar-date" id="todayDate"></span>
+    <button onclick="resetAll()" style="background:rgba(255,79,123,0.12);border:1px solid rgba(255,79,123,0.22);border-radius:8px;padding:5px 11px;color:#FF4F7B;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Sıfırla</button>
   </div>
 </header>
 
@@ -558,23 +559,7 @@ function saveKur()   { try{localStorage.setItem(LS_KUR,   JSON.stringify(kurData
 function saveTax()   { try{localStorage.setItem(LS_TAX,   JSON.stringify(taxExtra));}catch(e){} }
 function savePrices(){ try{localStorage.setItem(LS_PRICE, JSON.stringify(prices));}catch(e){} }
 
-// ─── SEED DATA (örnek portföy) ────────
-if (!txData.length) {
-  txData = [
-    {id:1,ticker:'AAPL',sector:'Teknoloji',side:'buy',qty:10,price:175.50,komisyon:1.5,date:'2025-10-15',note:''},
-    {id:2,ticker:'AAPL',sector:'Teknoloji',side:'buy',qty:5, price:168.20,komisyon:0.8,date:'2025-11-20',note:''},
-    {id:3,ticker:'NVDA',sector:'Teknoloji',side:'buy',qty:8, price:480.00,komisyon:2.0,date:'2025-10-20',note:''},
-    {id:4,ticker:'MSFT',sector:'Teknoloji',side:'buy',qty:6, price:415.00,komisyon:1.2,date:'2025-11-05',note:''},
-    {id:5,ticker:'AMZN',sector:'E-Ticaret',side:'buy',qty:12,price:185.00,komisyon:1.5,date:'2025-11-15',note:''},
-    {id:6,ticker:'META',sector:'Sosyal Medya',side:'buy',qty:7,price:560.00,komisyon:1.8,date:'2025-12-01',note:''},
-    {id:7,ticker:'GOOGL',sector:'Teknoloji',side:'buy',qty:5, price:172.00,komisyon:0.9,date:'2025-12-10',note:''},
-    {id:8,ticker:'AAPL',sector:'Teknoloji',side:'sell',qty:5,price:195.00,komisyon:1.0,date:'2026-01-15',note:''},
-    {id:9,ticker:'NVDA',sector:'Teknoloji',side:'sell',qty:3,price:620.00,komisyon:1.5,date:'2026-02-10',note:''},
-  ];
-  saveTx();
-  prices = {AAPL:213.50,NVDA:850.00,MSFT:445.00,AMZN:195.00,META:580.00,GOOGL:185.00};
-  savePrices();
-}
+// No seed data — starts empty
 
 // ─── SECTOR COLOR MAP ─────────────────
 var SECTOR_COLORS = {
@@ -975,6 +960,40 @@ function saveTrade(){
   renderPortfolio();
   if(curScreen==='tx') renderTx(curTxFilter);
   if(curScreen==='dist') renderDist();
+}
+
+// ─── RESET ───────────────────────────
+function resetAll(){
+  var m=document.createElement('div');
+  m.className='overlay';
+  var sh=document.createElement('div');
+  sh.className='sheet';
+  sh.style.textAlign='center';
+  sh.innerHTML='<div class="sheet-handle"></div>'+
+    '<div style="font-size:32px;margin-bottom:12px">&#9888;&#65039;</div>'+
+    '<div class="sheet-title" style="text-align:center">Tum verileri sil?</div>'+
+    '<div style="font-size:13px;color:var(--ink2);margin-bottom:24px;line-height:1.6">Tum islemler, kurlar ve portfoy verisi kalici olarak silinecek.</div>';
+  var btnOk=document.createElement('button');
+  btnOk.className='btn-sell';
+  btnOk.textContent='Evet, Sil';
+  var btnCancel=document.createElement('button');
+  btnCancel.className='btn-ghost';
+  btnCancel.textContent='Iptal';
+  sh.appendChild(btnOk);
+  sh.appendChild(btnCancel);
+  m.appendChild(sh);
+  document.body.appendChild(m);
+  btnCancel.onclick=function(){m.remove();};
+  m.onclick=function(e){if(e.target===m)m.remove();};
+  btnOk.onclick=function(){
+    localStorage.removeItem(LS_TX);
+    localStorage.removeItem(LS_KUR);
+    localStorage.removeItem(LS_TAX);
+    localStorage.removeItem(LS_PRICE);
+    txData=[]; kurData={}; taxExtra={}; prices={};
+    m.remove();
+    renderPortfolio();
+  };
 }
 
 // ─── INIT ─────────────────────────────
