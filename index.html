@@ -379,8 +379,8 @@ body{
   </div>
   <div class="bar-right">
     <span class="bar-date" id="todayDate"></span>
-    <button onclick="ibkrImport()" style="background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.22);border-radius:8px;padding:5px 11px;color:#38BDF8;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">IBKR</button>
-    <button onclick="resetAll()" style="background:rgba(255,79,123,0.12);border:1px solid rgba(255,79,123,0.22);border-radius:8px;padding:5px 11px;color:#FF4F7B;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Sifirla</button>
+    <button id="refreshBtn" onclick="fetchAllPrices()" style="background:rgba(16,212,142,0.12);border:1px solid rgba(16,212,142,0.22);border-radius:8px;padding:5px 12px;color:#10D48E;font-size:11px;font-weight:700;cursor:pointer">Fiyat Guncelle</button>
+    <button onclick="resetAll()" style="background:rgba(255,79,123,0.12);border:1px solid rgba(255,79,123,0.22);border-radius:8px;padding:5px 11px;color:#FF4F7B;font-size:11px;font-weight:700;cursor:pointer">Sifirla</button>
   </div>
 </header>
 
@@ -668,48 +668,68 @@ var _fetchInProgress = false;
 function fetchAllPrices(){
   if(_fetchInProgress) return;
   var holdings = computeHoldings();
-  if(!holdings.length){ alert('Portfoy bos'); return; }
+  if(!holdings.length) return;
   var tickers = holdings.map(function(h){ return h.ticker; });
   var btn = document.getElementById('refreshBtn');
-  if(btn){ btn.textContent = '...'; btn.style.opacity = '0.6'; }
+  if(btn){ btn.textContent='...'; btn.style.opacity='0.5'; }
   _fetchInProgress = true;
-  var done = 0; var total = tickers.length; var failed = 0;
+  var done=0; var failed=0; var total=tickers.length;
+
+  function finish(){
+    done++;
+    if(done < total) return;
+    _fetchInProgress = false;
+    savePrices();
+    renderPortfolio();
+    if(curScreen==='dist') renderDist();
+    if(btn){
+      btn.style.opacity='1';
+      if(failed===0){
+        btn.textContent='OK';
+        btn.style.color='#10D48E';
+      } else {
+        btn.textContent=(total-failed)+'/'+total+' OK';
+        btn.style.color='#FFB020';
+      }
+      setTimeout(function(){ if(btn){btn.textContent='Fiyat Guncelle';btn.style.color='#10D48E';} },3000);
+    }
+  }
 
   tickers.forEach(function(ticker){
-    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?interval=1d&range=1d';
-    var proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-    fetch(proxy)
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        var price = null;
-        try {
-          price = data.chart.result[0].meta.regularMarketPrice ||
-                  data.chart.result[0].meta.previousClose;
-        } catch(e){}
-        if(price && price > 0){
-          prices[ticker] = Math.round(price * 100) / 100;
-        } else {
-          failed++;
-        }
-      })
-      .catch(function(){ failed++; })
-      .finally(function(){
-        done++;
-        if(done === total){
-          _fetchInProgress = false;
-          savePrices();
-          renderPortfolio();
-          if(curScreen==='dist') renderDist();
-          if(btn){
-            btn.textContent = failed > 0 ? ('↻ (' + failed + ' hata)') : '↻ Guncellendi';
-            btn.style.opacity = '1';
-            setTimeout(function(){ if(btn) btn.textContent = 'IBKR'; }, 3000);
+    // Use a working CORS proxy
+    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?range=1d&interval=1d';
+    var proxies = [
+      'https://corsproxy.io/?url='+encodeURIComponent(url),
+      'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+      'https://thingproxy.freeboard.io/fetch/'+url,
+    ];
+    var tried = 0;
+    function attempt(){
+      if(tried >= proxies.length){ failed++; finish(); return; }
+      var proxyUrl = proxies[tried++];
+      fetch(proxyUrl, {signal: AbortSignal.timeout(8000)})
+        .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function(text){
+          var price = null;
+          try{
+            // allorigins wraps: {"contents": "...json..."}
+            var obj = JSON.parse(text);
+            if(typeof obj.contents === 'string') obj = JSON.parse(obj.contents);
+            var meta = obj.chart.result[0].meta;
+            price = meta.regularMarketPrice || meta.previousClose;
+          }catch(e){}
+          if(price && price > 0){
+            prices[ticker] = Math.round(price*100)/100;
+            finish();
+          } else {
+            attempt();
           }
-        }
-      });
+        })
+        .catch(function(){ attempt(); });
+    }
+    attempt();
   });
 }
-
 function openHolding(ticker){
   var holdings = computeHoldings();
   var h = holdings.find(function(x){ return x.ticker === ticker; });
@@ -1336,7 +1356,7 @@ Chart.defaults.color='#8892A4';
 Chart.defaults.font.family="'DM Sans', sans-serif";
 renderPortfolio();
 // Auto-refresh prices on load
-setTimeout(function(){ fetchAllPrices(); }, 1000);
+fetchAllPrices();
 </script>
 </body>
 </html>
