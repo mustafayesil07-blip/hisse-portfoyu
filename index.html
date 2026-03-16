@@ -379,7 +379,8 @@ body{
   </div>
   <div class="bar-right">
     <span class="bar-date" id="todayDate"></span>
-    <button onclick="resetAll()" style="background:rgba(255,79,123,0.12);border:1px solid rgba(255,79,123,0.22);border-radius:8px;padding:5px 11px;color:#FF4F7B;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Sıfırla</button>
+    <button onclick="ibkrImport()" style="background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.22);border-radius:8px;padding:5px 11px;color:#38BDF8;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">IBKR</button>
+    <button onclick="resetAll()" style="background:rgba(255,79,123,0.12);border:1px solid rgba(255,79,123,0.22);border-radius:8px;padding:5px 11px;color:#FF4F7B;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Sifirla</button>
   </div>
 </header>
 
@@ -559,7 +560,14 @@ function saveKur()   { try{localStorage.setItem(LS_KUR,   JSON.stringify(kurData
 function saveTax()   { try{localStorage.setItem(LS_TAX,   JSON.stringify(taxExtra));}catch(e){} }
 function savePrices(){ try{localStorage.setItem(LS_PRICE, JSON.stringify(prices));}catch(e){} }
 
-// No seed data — starts empty
+// IBKR Import — real trades with commissions
+var IBKR_SEED_TX = [{"id": 1700000000000, "ticker": "CCJ", "sector": "Enerji", "side": "buy", "qty": 25, "price": 117.477, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000001, "ticker": "CEG", "sector": "Enerji", "side": "buy", "qty": 9, "price": 314.0, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000002, "ticker": "DPRO", "sector": "Teknoloji", "side": "buy", "qty": 191, "price": 10.385, "komisyon": 1.0, "date": "2026-01-20", "note": "IBKR import"}, {"id": 1700000000003, "ticker": "ETN", "sector": "Sanayi", "side": "buy", "qty": 9, "price": 346.865, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000004, "ticker": "FLY", "sector": "Havacilik", "side": "buy", "qty": 32, "price": 23.79, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}, {"id": 1700000000005, "ticker": "INTC", "sector": "Teknoloji", "side": "buy", "qty": 62, "price": 48.345, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000006, "ticker": "LITE", "sector": "Teknoloji", "side": "buy", "qty": 1, "price": 640.54, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}, {"id": 1700000000007, "ticker": "MU", "sector": "Teknoloji", "side": "buy", "qty": 100, "price": 257.5, "komisyon": 0.0, "date": "2025-11-14", "note": "IBKR import"}, {"id": 1700000000008, "ticker": "MU", "sector": "Teknoloji", "side": "sell", "qty": 70, "price": 395.0, "komisyon": 1.01, "date": "2026-02-11", "note": "IBKR import"}, {"id": 1700000000009, "ticker": "ONDS", "sector": "Teknoloji", "side": "buy", "qty": 230, "price": 13.09, "komisyon": 1.15, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000010, "ticker": "ONDS", "sector": "Teknoloji", "side": "buy", "qty": 100, "price": 9.995, "komisyon": 1.0, "date": "2026-02-24", "note": "IBKR import"}, {"id": 1700000000011, "ticker": "PATH", "sector": "Teknoloji", "side": "buy", "qty": 200, "price": 14.0, "komisyon": 0.0, "date": "2026-02-17", "note": "IBKR import"}, {"id": 1700000000012, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "buy", "qty": 800, "price": 100.395, "komisyon": 4.02, "date": "2025-11-03", "note": "IBKR import"}, {"id": 1700000000013, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 500, "price": 100.6, "komisyon": 2.59, "date": "2025-11-21", "note": "IBKR import"}, {"id": 1700000000014, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 100, "price": 100.64, "komisyon": 1.02, "date": "2025-11-26", "note": "IBKR import"}, {"id": 1700000000015, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 200, "price": 100.64, "komisyon": 1.04, "date": "2025-11-26", "note": "IBKR import"}, {"id": 1700000000016, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "buy", "qty": 1000, "price": 100.47, "komisyon": 5.0, "date": "2025-12-09", "note": "IBKR import"}, {"id": 1700000000017, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 26, "price": 100.52, "komisyon": 1.0, "date": "2025-12-12", "note": "IBKR import"}, {"id": 1700000000018, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 510, "price": 100.53, "komisyon": 2.63, "date": "2025-12-15", "note": "IBKR import"}, {"id": 1700000000019, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 344, "price": 100.37, "komisyon": 1.78, "date": "2025-12-30", "note": "IBKR import"}, {"id": 1700000000020, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 39, "price": 100.43, "komisyon": 1.01, "date": "2026-01-06", "note": "IBKR import"}, {"id": 1700000000021, "ticker": "SHOP", "sector": "E-Ticaret", "side": "buy", "qty": 100, "price": 145.0, "komisyon": 0.0, "date": "2026-02-12", "note": "IBKR import"}, {"id": 1700000000022, "ticker": "SOFI", "sector": "Fintech", "side": "buy", "qty": 500, "price": 28.0, "komisyon": 0.0, "date": "2025-12-12", "note": "IBKR import"}, {"id": 1700000000023, "ticker": "VRT", "sector": "Teknoloji", "side": "buy", "qty": 3, "price": 260.88, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}];
+var IBKR_SEED_PRICES = {"CCJ": 107.92, "CEG": 301.77, "DPRO": 6.34, "ETN": 355.4, "FLY": 23.47, "INTC": 45.77, "LITE": 622.5, "MU": 426.13, "ONDS": 10.16, "PATH": 11.58, "SGOV": 100.52, "SHOP": 122.96, "SOFI": 17.76, "VRT": 258.88};
+if (!txData.length) {
+  txData  = JSON.parse(JSON.stringify(IBKR_SEED_TX));
+  prices  = JSON.parse(JSON.stringify(IBKR_SEED_PRICES));
+  saveTx(); savePrices();
+}
 
 // ─── SECTOR COLOR MAP ─────────────────
 var SECTOR_COLORS = {
@@ -654,6 +662,190 @@ function go(name){
 document.getElementById('fabBtn').onclick=function(){ openAddTrade(); };
 
 // ─── PORTFOLIO SCREEN ─────────────────
+function openHolding(ticker){
+  var holdings = computeHoldings();
+  var h = holdings.find(function(x){ return x.ticker === ticker; });
+  if(!h) return;
+  var sectors = ['Teknoloji','E-Ticaret','Sosyal Medya','Finans','Fintech','Sanayi','Enerji','Havacilik','Tahvil ETF','Diger'];
+  var c = tickerColor(ticker);
+
+  var m = document.createElement('div');
+  m.className = 'overlay';
+  m.innerHTML =
+    '<div class="sheet">' +
+      '<div class="sheet-handle"></div>' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">' +
+        '<div style="width:46px;height:46px;border-radius:13px;background:' + c + '22;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800">' + ticker + '</div>' +
+        '<div>' +
+          '<div style="font-size:18px;font-weight:800;color:var(--ink)">' + ticker + '</div>' +
+          '<div style="font-size:12px;color:var(--ink2);margin-top:2px">' + h.qty + ' adet · Ort. maliyet: $' + h.avgCost.toFixed(2) + '</div>' +
+        '</div>' +
+        '<div style="margin-left:auto;text-align:right">' +
+          '<div style="font-size:18px;font-weight:800;color:' + (h.unrealizedPnl>=0?'var(--emerald)':'var(--rose)') + '">' + (h.unrealizedPnl>=0?'+':'') + fmt$(h.unrealizedPnl) + '</div>' +
+          '<div style="font-size:11px;color:var(--ink3)">' + (h.unrealizedPct>=0?'+':'') + h.unrealizedPct.toFixed(2) + '%</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="tab-row" id="hTabRow">' +
+        '<div class="tab-btn on buy" id="htab-info" data-htab="info">Ozet</div>' +
+        '<div class="tab-btn buy" id="htab-buy" data-htab="buy">Alim</div>' +
+        '<div class="tab-btn sell" id="htab-sell" data-htab="sell">Satim</div>' +
+        '<div class="tab-btn buy" id="htab-edit" data-htab="edit">Duzenle</div>' +
+      '</div>' +
+
+      // INFO TAB
+      '<div id="htab-info-content">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">' +
+          '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center">' +
+            '<div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px">Piyasa Değeri</div>' +
+            '<div style="font-size:15px;font-weight:700;font-family:DM Mono,monospace">' + fmt$(h.marketValue) + '</div>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center">' +
+            '<div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px">Maliyet Bazı</div>' +
+            '<div style="font-size:15px;font-weight:700;font-family:DM Mono,monospace">' + fmt$(h.costBasis) + '</div>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center">' +
+            '<div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px">Adet</div>' +
+            '<div style="font-size:15px;font-weight:700;font-family:DM Mono,monospace">' + h.qty + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,.05);border-radius:12px;padding:14px;margin-bottom:12px">' +
+          '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;color:var(--ink2)">Ort. Maliyet</span><span style="font-weight:700;font-family:DM Mono,monospace">$' + h.avgCost.toFixed(2) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;color:var(--ink2)">Güncel Fiyat</span><span style="font-weight:700;font-family:DM Mono,monospace">$' + h.currentPrice.toFixed(2) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;color:var(--ink2)">Fark</span><span style="font-weight:700;color:' + (h.unrealizedPnl>=0?'var(--emerald)':'var(--rose)') + '">' + (h.unrealizedPnl>=0?'+':'') + fmt$(h.unrealizedPnl) + ' (' + h.unrealizedPct.toFixed(2) + '%)</span></div>' +
+          '<div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--ink2)">Sektör</span><span style="font-weight:600">' + h.sector + '</span></div>' +
+        '</div>' +
+      '</div>' +
+
+      // BUY TAB
+      '<div id="htab-buy-content" style="display:none">' +
+        '<div class="frow"><div><label class="fi-lbl">Adet</label><input id="hb_qty" type="number" class="fi" placeholder="10"></div><div><label class="fi-lbl">Fiyat ($)</label><input id="hb_price" type="number" class="fi" placeholder="' + h.currentPrice.toFixed(2) + '" step="0.01"></div></div>' +
+        '<div class="frow"><div><label class="fi-lbl">Komisyon ($)</label><input id="hb_kom" type="number" class="fi" placeholder="0.00" step="0.01"></div><div><label class="fi-lbl">Tarih</label><input id="hb_date" type="date" class="fi"></div></div>' +
+        '<button class="btn-buy" data-action="htrade-buy">Alim Kaydet</button>' +
+      '</div>' +
+
+      // SELL TAB
+      '<div id="htab-sell-content" style="display:none">' +
+        '<div style="background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--rose)">Mevcut pozisyon: <strong>' + h.qty + ' adet</strong></div>' +
+        '<div class="frow"><div><label class="fi-lbl">Adet</label><input id="hs_qty" type="number" class="fi" placeholder="' + h.qty + '" max="' + h.qty + '"></div><div><label class="fi-lbl">Fiyat ($)</label><input id="hs_price" type="number" class="fi" placeholder="' + h.currentPrice.toFixed(2) + '" step="0.01"></div></div>' +
+        '<div class="frow"><div><label class="fi-lbl">Komisyon ($)</label><input id="hs_kom" type="number" class="fi" placeholder="0.00" step="0.01"></div><div><label class="fi-lbl">Tarih</label><input id="hs_date" type="date" class="fi"></div></div>' +
+        '<button class="btn-sell" data-action="htrade-sell">Satim Kaydet</button>' +
+      '</div>' +
+
+      // EDIT TAB
+      '<div id="htab-edit-content" style="display:none">' +
+        '<div class="ffull"><label class="fi-lbl">Güncel Fiyat ($)</label><input id="he_price" type="number" class="fi" value="' + h.currentPrice + '" step="0.01"></div>' +
+        '<div class="ffull"><label class="fi-lbl">Sektör</label><select id="he_sector" class="fi">' +
+          sectors.map(function(s){ return '<option' + (s===h.sector?' selected':'') + '>' + s + '</option>'; }).join('') +
+        '</select></div>' +
+        '<button class="btn-buy" data-action="hedit">Guncelle</button>' +
+        '<button class="btn-rose" data-action="hdelete" style="width:100%;margin-top:8px;background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:13px;padding:12px;color:var(--rose);font-size:14px;font-weight:700;cursor:pointer">Pozisyonu Sil</button>' +
+      '</div>' +
+
+      '<button class="btn-ghost" data-action="hclose">Kapat</button>' +
+    '</div>';
+
+  document.body.appendChild(m);
+  var today = new Date().toISOString().split('T')[0];
+  if(m.querySelector('#hb_date')) m.querySelector('#hb_date').value = today;
+  if(m.querySelector('#hs_date')) m.querySelector('#hs_date').value = today;
+  m.addEventListener('click', function(e){
+    if(e.target===m){ m.remove(); return; }
+    var tab = e.target.closest('[data-htab]');
+    if(tab){ switchHTab(tab.dataset.htab); return; }
+    var act = e.target.closest('[data-action]');
+    if(act){
+      var a = act.dataset.action;
+      if(a==='htrade-buy')  doHoldingTrade(ticker, 'buy');
+      if(a==='htrade-sell') doHoldingTrade(ticker, 'sell');
+      if(a==='hedit')       doHoldingEdit(ticker);
+      if(a==='hdelete')     deleteHolding(ticker);
+      if(a==='hclose')      m.remove();
+    }
+  });
+}
+
+function switchHTab(tab){
+  ['info','buy','sell','edit'].forEach(function(t){
+    var btn = document.getElementById('htab-' + t);
+    var con = document.getElementById('htab-' + t + '-content');
+    if(btn) btn.className = 'tab-btn' + (t==='sell'?' sell':' buy');
+    if(con) con.style.display = 'none';
+  });
+  var activeBtn = document.getElementById('htab-' + tab);
+  var activeCon = document.getElementById('htab-' + tab + '-content');
+  if(activeBtn) activeBtn.className = 'tab-btn on ' + (tab==='sell'?'sell':'buy');
+  if(activeCon) activeCon.style.display = 'block';
+}
+
+function doHoldingTrade(ticker, side){
+  var qtyEl  = document.getElementById('h' + side[0] + '_qty');
+  var priceEl= document.getElementById('h' + side[0] + '_price');
+  var komEl  = document.getElementById('h' + side[0] + '_kom');
+  var dateEl = document.getElementById('h' + side[0] + '_date');
+  var qty    = parseFloat(qtyEl ? qtyEl.value : 0);
+  var price  = parseFloat(priceEl ? priceEl.value : 0);
+  if(!qty || !price){ alert('Adet ve fiyat gerekli'); return; }
+  var tx = {
+    id: Date.now(), ticker: ticker,
+    sector: computeHoldings().find(function(h){ return h.ticker===ticker; })?.sector || 'Diger',
+    side: side, qty: qty, price: price,
+    komisyon: parseFloat(komEl ? komEl.value : 0) || 0,
+    date: dateEl ? dateEl.value : new Date().toISOString().split('T')[0],
+    note: ''
+  };
+  txData.push(tx); saveTx();
+  document.querySelector('.overlay').remove();
+  renderPortfolio();
+  if(curScreen==='tx') renderTx(curTxFilter);
+  if(curScreen==='dist') renderDist();
+}
+
+function doHoldingEdit(ticker){
+  var priceEl  = document.getElementById('he_price');
+  var sectorEl = document.getElementById('he_sector');
+  var newPrice  = parseFloat(priceEl ? priceEl.value : 0);
+  var newSector = sectorEl ? sectorEl.value : '';
+  if(newPrice > 0){ prices[ticker] = newPrice; savePrices(); }
+  if(newSector){
+    txData.forEach(function(tx){ if(tx.ticker===ticker) tx.sector = newSector; });
+    saveTx();
+  }
+  document.querySelector('.overlay').remove();
+  renderPortfolio();
+  if(curScreen==='dist') renderDist();
+}
+
+function deleteHolding(ticker){
+  var m2 = document.createElement('div');
+  m2.className = 'overlay';
+  var sh = document.createElement('div');
+  sh.className = 'sheet';
+  sh.style.textAlign = 'center';
+  sh.innerHTML = '<div class="sheet-handle"></div><div style="font-size:28px;margin-bottom:10px">🗑</div>' +
+    '<div class="sheet-title" style="text-align:center">' + ticker + ' silinsin mi?</div>' +
+    '<div style="font-size:13px;color:var(--ink2);margin-bottom:20px">Tüm ' + ticker + ' işlemleri silinecek.</div>';
+  var btnOk = document.createElement('button');
+  btnOk.className = 'btn-sell';
+  btnOk.textContent = 'Evet, Sil';
+  var btnCancel = document.createElement('button');
+  btnCancel.className = 'btn-ghost';
+  btnCancel.textContent = 'Vazgec';
+  sh.appendChild(btnOk); sh.appendChild(btnCancel);
+  m2.appendChild(sh); document.body.appendChild(m2);
+  btnCancel.onclick = function(){ m2.remove(); document.querySelector('.overlay').remove(); };
+  m2.onclick = function(e){ if(e.target===m2){ m2.remove(); } };
+  btnOk.onclick = function(){
+    txData = txData.filter(function(tx){ return tx.ticker !== ticker; });
+    delete prices[ticker];
+    saveTx(); savePrices();
+    m2.remove();
+    document.querySelectorAll('.overlay').forEach(function(o){ o.remove(); });
+    renderPortfolio();
+    if(curScreen==='dist') renderDist();
+  };
+}
+
 function renderPortfolio(){
   var holdings=computeHoldings();
   var totalMV=holdings.reduce(function(s,h){return s+h.marketValue;},0);
@@ -685,7 +877,7 @@ function renderPortfolio(){
     var pnlColor=h.unrealizedPnl>=0?'var(--emerald)':'var(--rose)';
     var weightPct=totalMV>0?h.marketValue/totalMV*100:0;
     var sc=SECTOR_COLORS[h.sector]||SECTOR_COLORS['Diğer'];
-    return '<div class="hcard">'+
+    return '<div class="hcard" onclick="openHolding(\'' + h.ticker + '\')">'+
       '<div class="hc-head">'+
         '<div class="hc-color" style="background:'+c+'"></div>'+
         '<div class="hc-icon" style="background:'+cBg+';color:'+c+'">'+h.ticker.slice(0,4)+'</div>'+
@@ -811,20 +1003,33 @@ document.addEventListener('click',function(e){
 // ─── VERGİ ────────────────────────────
 function renderVergi(){
   var yil=document.getElementById('vergiYil')?document.getElementById('vergiYil').value:'2026';
-  var sells=txData.filter(function(tx){return tx.side==='sell'&&tx.date&&tx.date.startsWith(yil);});
+  // Use live txData (from localStorage or seed)
+  var allTx = txData.length ? txData : (typeof IBKR_SEED_TX!=='undefined' ? IBKR_SEED_TX : []);
+  var sells=allTx.filter(function(tx){return tx.side==='sell'&&tx.date&&tx.date.startsWith(yil);});
 
-  // For each sell, match with buys for avg cost
+  // For each sell, calculate P&L using weighted avg cost of prior buys (FIFO avg)
   var rows=sells.map(function(sell){
-    var buys=txData.filter(function(tx){return tx.ticker===sell.ticker&&tx.side==='buy'&&new Date(tx.date)<=new Date(sell.date);});
-    var totalBuyQty=buys.reduce(function(s,b){return s+b.qty;},0);
-    var totalBuyCost=buys.reduce(function(s,b){return s+b.qty*b.price+b.komisyon;},0);
-    var avgCost=totalBuyQty>0?totalBuyCost/totalBuyQty:0;
-    var sellRevenue=sell.qty*sell.price-sell.komisyon;
-    var buyCost=sell.qty*avgCost;
-    var pnlUSD=sellRevenue-buyCost;
-    var kur=getKur(sell.date)||0;
-    var matrahTRY=kur>0?pnlUSD*kur:null;
-    return {sell,avgCost,pnlUSD,kur,matrahTRY};
+    // All buys of same ticker up to sell date
+    var buys=allTx.filter(function(tx){
+      return tx.ticker===sell.ticker && tx.side==='buy' && tx.date<=sell.date;
+    });
+    var totalBuyQty  = buys.reduce(function(s,b){return s+b.qty;},0);
+    var totalBuyCost = buys.reduce(function(s,b){return s+b.qty*b.price+b.komisyon;},0);
+    var avgCost      = totalBuyQty>0 ? totalBuyCost/totalBuyQty : 0;
+
+    // Hisse vergi formülü:
+    // Satış geliri = (satış fiyatı × adet) - satış komisyonu
+    // Alış maliyeti = ortalama maliyet × adet  (komisyon dahil avgCost'ta)
+    // Matrah (USD) = Satış geliri - Alış maliyeti
+    var sellRevenue = sell.qty * sell.price - sell.komisyon;
+    var buyCost     = sell.qty * avgCost;
+    var pnlUSD      = sellRevenue - buyCost;
+
+    // TRY matrah = USD kazanç × satış günü kuru
+    var kur         = getKur(sell.date) || 0;
+    var matrahTRY   = kur > 0 ? pnlUSD * kur : null;
+
+    return {sell:sell, avgCost:avgCost, pnlUSD:pnlUSD, kur:kur, matrahTRY:matrahTRY};
   });
 
   var totalPnlUSD=rows.reduce(function(s,r){return s+r.pnlUSD;},0);
@@ -993,6 +1198,87 @@ function resetAll(){
     txData=[]; kurData={}; taxExtra={}; prices={};
     m.remove();
     renderPortfolio();
+  };
+}
+
+
+// ─── IBKR IMPORT ─────────────────────
+var IBKR_POSITIONS = [
+  {ticker:'CCJ', qty:25,  avgCost:117.5170, currentPrice:107.9200, sector:'Enerji'},
+  {ticker:'CEG', qty:9,   avgCost:314.1111, currentPrice:301.7700, sector:'Enerji'},
+  {ticker:'DPRO',qty:191, avgCost:10.3902,  currentPrice:6.3400,   sector:'Teknoloji'},
+  {ticker:'ETN', qty:9,   avgCost:346.9761, currentPrice:355.4000, sector:'Endustri'},
+  {ticker:'FLY', qty:32,  avgCost:23.8213,  currentPrice:23.4700,  sector:'Havacilik'},
+  {ticker:'INTC',qty:62,  avgCost:48.3611,  currentPrice:45.7700,  sector:'Teknoloji'},
+  {ticker:'LITE',qty:1,   avgCost:641.5400, currentPrice:622.5000, sector:'Teknoloji'},
+  {ticker:'MU',  qty:30,  avgCost:253.0280, currentPrice:426.1300, sector:'Teknoloji'},
+  {ticker:'ONDS',qty:330, avgCost:12.1586,  currentPrice:10.1600,  sector:'Teknoloji'},
+  {ticker:'PATH',qty:200, avgCost:13.6570,  currentPrice:11.5800,  sector:'Yazilim'},
+  {ticker:'SGOV',qty:81,  avgCost:100.4750, currentPrice:100.5200, sector:'Tahvil'},
+  {ticker:'SHOP',qty:100, avgCost:140.8080, currentPrice:122.9600, sector:'E-Ticaret'},
+  {ticker:'SOFI',qty:500, avgCost:27.3639,  currentPrice:17.7600,  sector:'Finans'},
+  {ticker:'VRT', qty:3,   avgCost:261.2133, currentPrice:258.8800, sector:'Teknoloji'}
+];
+
+function ibkrImport(){
+  var m=document.createElement('div');
+  m.className='overlay';
+  var sh=document.createElement('div');
+  sh.className='sheet';
+  sh.style.textAlign='center';
+  sh.innerHTML='<div class="sheet-handle"></div>'+
+    '<div style="font-size:32px;margin-bottom:12px">📊</div>'+
+    '<div class="sheet-title" style="text-align:center">IBKR Pozisyonlarini Yukle</div>'+
+    '<div style="font-size:13px;color:var(--ink2);margin-bottom:8px;line-height:1.6;text-align:left">'+
+      'PDF statement\'dan <strong>14 hisse</strong> bulundu (13 Mar 2026):'+
+    '</div>'+
+    '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:16px;max-height:200px;overflow-y:auto;text-align:left">'+
+    IBKR_POSITIONS.map(function(p){
+      var pnl=(p.currentPrice-p.avgCost)*p.qty;
+      var c=pnl>=0?'var(--emerald)':'var(--rose)';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 2px;border-bottom:1px solid var(--rim)">'+
+        '<span style="font-size:12px;font-weight:700;color:var(--ink)">'+p.ticker+'</span>'+
+        '<span style="font-size:11px;color:var(--ink2)">'+p.qty+' adet</span>'+
+        '<span style="font-size:11px;font-weight:700;color:'+c+'">'+(pnl>=0?'+':'')+fmt$(pnl)+'</span>'+
+      '</div>';
+    }).join('')+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--ink3);margin-bottom:16px;text-align:left">Mevcut veriler silinecek ve IBKR verileri yuklenecek.</div>';
+  var btnOk=document.createElement('button');
+  btnOk.className='btn-buy';
+  btnOk.textContent='Yukle ('+IBKR_POSITIONS.length+' pozisyon)';
+  var btnCancel=document.createElement('button');
+  btnCancel.className='btn-ghost';
+  btnCancel.textContent='Iptal';
+  sh.appendChild(btnOk);
+  sh.appendChild(btnCancel);
+  m.appendChild(sh);
+  document.body.appendChild(m);
+  btnCancel.onclick=function(){m.remove();};
+  m.onclick=function(e){if(e.target===m)m.remove();};
+  btnOk.onclick=function(){
+    // Clear existing
+    txData=[]; prices={};
+    // Convert IBKR positions to buy transactions
+    IBKR_POSITIONS.forEach(function(p,i){
+      var tx={
+        id:1000+i,
+        ticker:p.ticker,
+        sector:p.sector,
+        side:'buy',
+        qty:p.qty,
+        price:p.avgCost,
+        komisyon:1.00,
+        date:'2026-03-13',
+        note:'IBKR import'
+      };
+      txData.push(tx);
+      prices[p.ticker]=p.currentPrice;
+    });
+    saveTx(); savePrices();
+    m.remove();
+    renderPortfolio();
+    alert('Yuklendi: ' + IBKR_POSITIONS.length + ' pozisyon');
   };
 }
 
