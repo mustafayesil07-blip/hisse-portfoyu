@@ -481,7 +481,7 @@ body{
   <div class="kur-box">
     <div class="kur-add">
       <div><label class="fi-lbl" style="margin-bottom:5px;display:block">Tarih</label><input type="date" id="kurTarih" class="fi"></div>
-      <div><label class="fi-lbl" style="margin-bottom:5px;display:block">Kur (₺)</label><input type="number" id="kurDeger" placeholder="38.42" step="0.01" class="fi"></div>
+      <div><label class="fi-lbl" style="margin-bottom:5px;display:block">Kur (₺)</label><input type="number" id="kurDeger" placeholder="38.4250" step="0.0001" class="fi"></div>
       <button onclick="kurEkle()" style="background:var(--sky);border:none;border-radius:10px;padding:0 14px;height:42px;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;align-self:flex-end;white-space:nowrap">+ Ekle</button>
     </div>
     <div id="kurListesi" class="kur-list"></div>
@@ -494,6 +494,16 @@ body{
     <div class="vt-head"><div>Hisse</div><div>İşlem</div><div>Tutar($)</div><div>Kom.($)</div><div>Kur(₺)</div><div>Matrah(₺)</div></div>
     <div id="vergiTablosu"></div>
   </div>
+</div>
+
+<!-- ═══════════════════════════════
+     METRİKLER SCREEN
+═══════════════════════════════ -->
+<div class="screen" id="screen-metrics">
+  <div class="sh">
+    <div><div class="sh-t">Metrikler</div><div class="sh-s" id="metricsSub">Portföy analizi</div></div>
+  </div>
+  <div id="metricsContent" style="padding:0 20px 20px"></div>
 </div>
 
 <!-- ═══════════════════════════════
@@ -528,6 +538,13 @@ body{
     </svg>
     <span class="nlbl">Vergi</span>
   </div>
+  <div class="ntab" onclick="go('metrics')" id="nav-metrics">
+    <div class="nbar"></div>
+    <svg class="nico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+    <span class="nlbl">Metrik</span>
+  </div>
 </nav>
 
 <script>
@@ -538,6 +555,7 @@ var LS_TX    = 'portfolio_tx_v1';
 var LS_KUR   = 'portfolio_kur_v1';
 var LS_TAX   = 'portfolio_tax_v1';
 var LS_PRICE = 'portfolio_prices_v1';
+var LS_NOTES = 'portfolio_notes_v1';
 
 // Transactions: [{id, ticker, sector, side:'buy'|'sell', qty, price, komisyon, date, note}]
 var txData = [];
@@ -555,10 +573,15 @@ try { var _tx=localStorage.getItem(LS_TAX); if(_tx) taxExtra=JSON.parse(_tx); } 
 var prices = {};
 try { var _p=localStorage.getItem(LS_PRICE); if(_p) prices=JSON.parse(_p); } catch(e){}
 
+// Ticker notes
+var tickerNotes = {};
+try { var _n=localStorage.getItem(LS_NOTES); if(_n) tickerNotes=JSON.parse(_n); } catch(e){}
+
 function saveTx()    { try{localStorage.setItem(LS_TX,    JSON.stringify(txData));}catch(e){} }
 function saveKur()   { try{localStorage.setItem(LS_KUR,   JSON.stringify(kurData));}catch(e){} }
 function saveTax()   { try{localStorage.setItem(LS_TAX,   JSON.stringify(taxExtra));}catch(e){} }
 function savePrices(){ try{localStorage.setItem(LS_PRICE, JSON.stringify(prices));}catch(e){} }
+function saveNotes() { try{localStorage.setItem(LS_NOTES, JSON.stringify(tickerNotes));}catch(e){} }
 
 // IBKR Import — real trades with commissions
 var IBKR_SEED_TX = [{"id": 1700000000000, "ticker": "CCJ", "sector": "Enerji", "side": "buy", "qty": 25, "price": 117.477, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000001, "ticker": "CEG", "sector": "Enerji", "side": "buy", "qty": 9, "price": 314.0, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000002, "ticker": "DPRO", "sector": "Teknoloji", "side": "buy", "qty": 191, "price": 10.385, "komisyon": 1.0, "date": "2026-01-20", "note": "IBKR import"}, {"id": 1700000000003, "ticker": "ETN", "sector": "Sanayi", "side": "buy", "qty": 9, "price": 346.865, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000004, "ticker": "FLY", "sector": "Havacilik", "side": "buy", "qty": 32, "price": 23.79, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}, {"id": 1700000000005, "ticker": "INTC", "sector": "Teknoloji", "side": "buy", "qty": 62, "price": 48.345, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000006, "ticker": "LITE", "sector": "Teknoloji", "side": "buy", "qty": 1, "price": 640.54, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}, {"id": 1700000000007, "ticker": "MU", "sector": "Teknoloji", "side": "buy", "qty": 100, "price": 257.5, "komisyon": 0.0, "date": "2025-11-14", "note": "IBKR import"}, {"id": 1700000000008, "ticker": "MU", "sector": "Teknoloji", "side": "sell", "qty": 70, "price": 395.0, "komisyon": 1.01, "date": "2026-02-11", "note": "IBKR import"}, {"id": 1700000000009, "ticker": "ONDS", "sector": "Teknoloji", "side": "buy", "qty": 230, "price": 13.09, "komisyon": 1.15, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000010, "ticker": "ONDS", "sector": "Teknoloji", "side": "buy", "qty": 100, "price": 9.995, "komisyon": 1.0, "date": "2026-02-24", "note": "IBKR import"}, {"id": 1700000000011, "ticker": "PATH", "sector": "Teknoloji", "side": "buy", "qty": 200, "price": 14.0, "komisyon": 0.0, "date": "2026-02-17", "note": "IBKR import"}, {"id": 1700000000012, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "buy", "qty": 800, "price": 100.395, "komisyon": 4.02, "date": "2025-11-03", "note": "IBKR import"}, {"id": 1700000000013, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 500, "price": 100.6, "komisyon": 2.59, "date": "2025-11-21", "note": "IBKR import"}, {"id": 1700000000014, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 100, "price": 100.64, "komisyon": 1.02, "date": "2025-11-26", "note": "IBKR import"}, {"id": 1700000000015, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 200, "price": 100.64, "komisyon": 1.04, "date": "2025-11-26", "note": "IBKR import"}, {"id": 1700000000016, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "buy", "qty": 1000, "price": 100.47, "komisyon": 5.0, "date": "2025-12-09", "note": "IBKR import"}, {"id": 1700000000017, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 26, "price": 100.52, "komisyon": 1.0, "date": "2025-12-12", "note": "IBKR import"}, {"id": 1700000000018, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 510, "price": 100.53, "komisyon": 2.63, "date": "2025-12-15", "note": "IBKR import"}, {"id": 1700000000019, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 344, "price": 100.37, "komisyon": 1.78, "date": "2025-12-30", "note": "IBKR import"}, {"id": 1700000000020, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 39, "price": 100.43, "komisyon": 1.01, "date": "2026-01-06", "note": "IBKR import"}, {"id": 1700000000021, "ticker": "SHOP", "sector": "E-Ticaret", "side": "buy", "qty": 100, "price": 145.0, "komisyon": 0.0, "date": "2026-02-12", "note": "IBKR import"}, {"id": 1700000000022, "ticker": "SOFI", "sector": "Fintech", "side": "buy", "qty": 500, "price": 28.0, "komisyon": 0.0, "date": "2025-12-12", "note": "IBKR import"}, {"id": 1700000000023, "ticker": "VRT", "sector": "Teknoloji", "side": "buy", "qty": 3, "price": 260.88, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}];
@@ -596,6 +619,7 @@ function tickerColor(t){
 function fmt$(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(v);}
 function fmtTRY(v){return v.toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:0})+' ₺';}
 function fmtPct(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function getKur(date){
   if(!date) return null;
   var d=date.substring(0,10);
@@ -653,9 +677,10 @@ function go(name){
   document.getElementById('screen-'+name).classList.add('on');
   document.getElementById('nav-'+name).classList.add('on');
   curScreen=name;
-  if(name==='dist')   renderDist();
-  if(name==='tx')     renderTx('all');
-  if(name==='vergi')  renderVergi();
+  if(name==='dist')    renderDist();
+  if(name==='tx')      renderTx('all');
+  if(name==='vergi')   renderVergi();
+  if(name==='metrics') renderMetrics();
 }
 
 // ─── FAB ─────────────────────────────
@@ -663,7 +688,7 @@ document.getElementById('fabBtn').onclick=function(){ openAddTrade(); };
 
 // ─── PORTFOLIO SCREEN ─────────────────
 
-// ─── PRICE FETCHER ────────────────────
+// ─── PRICE FETCHER (Anthropic API + web_search) ────────────────────
 var _fetchInProgress = false;
 function fetchAllPrices(){
   if(_fetchInProgress) return;
@@ -671,65 +696,47 @@ function fetchAllPrices(){
   if(!holdings.length) return;
   var tickers = holdings.map(function(h){ return h.ticker; });
   var btn = document.getElementById('refreshBtn');
-  if(btn){ btn.textContent='...'; btn.style.opacity='0.5'; }
+  if(btn){ btn.innerHTML='⟳ Yükleniyor...'; btn.style.opacity='0.7'; btn.disabled=true; }
   _fetchInProgress = true;
-  var done=0; var failed=0; var total=tickers.length;
 
-  function finish(){
-    done++;
-    if(done < total) return;
-    _fetchInProgress = false;
-    savePrices();
-    renderPortfolio();
+  var prompt = 'Give me the current stock prices for these tickers: ' + tickers.join(', ') + '. Return ONLY a JSON object like {"AAPL": 213.5, "MSFT": 420.1} with no extra text, markdown, or explanation. Use the most recent available price (today or last close).';
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(function(r){ if(!r.ok) throw new Error('API '+r.status); return r.json(); })
+  .then(function(data){
+    var text = '';
+    if(data.content){ data.content.forEach(function(block){ if(block.type==='text') text=block.text; }); }
+    var parsed = null;
+    try { var m=text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/); if(m) parsed=JSON.parse(m[0]); } catch(e){}
+    var updated=0;
+    if(parsed){ Object.keys(parsed).forEach(function(t){ var p=parseFloat(parsed[t]); if(p>0){prices[t]=Math.round(p*100)/100; updated++;} }); }
+    _fetchInProgress=false; savePrices(); renderPortfolio();
     if(curScreen==='dist') renderDist();
+    if(curScreen==='metrics') renderMetrics();
     if(btn){
-      btn.style.opacity='1';
-      if(failed===0){
-        btn.textContent='OK';
-        btn.style.color='#10D48E';
-      } else {
-        btn.textContent=(total-failed)+'/'+total+' OK';
-        btn.style.color='#FFB020';
-      }
-      setTimeout(function(){ if(btn){btn.textContent='Fiyat Guncelle';btn.style.color='#10D48E';} },3000);
+      btn.disabled=false; btn.style.opacity='1';
+      if(updated>=tickers.length*0.8){btn.innerHTML='✓ '+updated+'/'+tickers.length+' Güncellendi';btn.style.color='#10D48E';}
+      else if(updated>0){btn.innerHTML='⚠ '+updated+'/'+tickers.length;btn.style.color='#FFB020';}
+      else{btn.innerHTML='✗ Başarısız';btn.style.color='#FF4F7B';}
+      setTimeout(function(){ if(btn){btn.innerHTML='Fiyat Güncelle';btn.style.color='#10D48E';} },4000);
     }
-  }
-
-  tickers.forEach(function(ticker){
-    // Use a working CORS proxy
-    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?range=1d&interval=1d';
-    var proxies = [
-      'https://corsproxy.io/?url='+encodeURIComponent(url),
-      'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
-      'https://thingproxy.freeboard.io/fetch/'+url,
-    ];
-    var tried = 0;
-    function attempt(){
-      if(tried >= proxies.length){ failed++; finish(); return; }
-      var proxyUrl = proxies[tried++];
-      fetch(proxyUrl, {signal: AbortSignal.timeout(8000)})
-        .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
-        .then(function(text){
-          var price = null;
-          try{
-            // allorigins wraps: {"contents": "...json..."}
-            var obj = JSON.parse(text);
-            if(typeof obj.contents === 'string') obj = JSON.parse(obj.contents);
-            var meta = obj.chart.result[0].meta;
-            price = meta.regularMarketPrice || meta.previousClose;
-          }catch(e){}
-          if(price && price > 0){
-            prices[ticker] = Math.round(price*100)/100;
-            finish();
-          } else {
-            attempt();
-          }
-        })
-        .catch(function(){ attempt(); });
-    }
-    attempt();
+  })
+  .catch(function(err){
+    _fetchInProgress=false;
+    if(btn){btn.disabled=false;btn.style.opacity='1';btn.innerHTML='✗ Hata';btn.style.color='#FF4F7B';
+      setTimeout(function(){ if(btn){btn.innerHTML='Fiyat Güncelle';btn.style.color='#10D48E';} },3000);}
   });
 }
+
 function openHolding(ticker){
   var holdings = computeHoldings();
   var h = holdings.find(function(x){ return x.ticker === ticker; });
@@ -755,10 +762,11 @@ function openHolding(ticker){
       '</div>' +
 
       '<div class="tab-row" id="hTabRow">' +
-        '<div class="tab-btn on buy" id="htab-info" data-htab="info">Ozet</div>' +
-        '<div class="tab-btn buy" id="htab-buy" data-htab="buy">Alim</div>' +
-        '<div class="tab-btn sell" id="htab-sell" data-htab="sell">Satim</div>' +
-        '<div class="tab-btn buy" id="htab-edit" data-htab="edit">Duzenle</div>' +
+        '<div class="tab-btn on buy" id="htab-info" data-htab="info">Özet</div>' +
+        '<div class="tab-btn buy" id="htab-buy" data-htab="buy">Alım</div>' +
+        '<div class="tab-btn sell" id="htab-sell" data-htab="sell">Satım</div>' +
+        '<div class="tab-btn buy" id="htab-edit" data-htab="edit">Düzenle</div>' +
+        '<div class="tab-btn buy" id="htab-note" data-htab="note">📝 Not</div>' +
       '</div>' +
 
       // INFO TAB
@@ -810,6 +818,14 @@ function openHolding(ticker){
         '<button class="btn-rose" data-action="hdelete" style="width:100%;margin-top:8px;background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:13px;padding:12px;color:var(--rose);font-size:14px;font-weight:700;cursor:pointer">Pozisyonu Sil</button>' +
       '</div>' +
 
+      // NOTE TAB
+      '<div id="htab-note-content" style="display:none">' +
+        '<div style="margin-bottom:10px;font-size:12px;color:var(--ink2)">Bu hisse için kişisel notunuzu yazın:</div>' +
+        '<textarea id="hn_note" style="width:100%;min-height:120px;background:rgba(255,255,255,.06);border:1px solid var(--rim2);border-radius:11px;padding:12px;color:var(--ink);font-family:DM Sans,sans-serif;font-size:13px;outline:none;resize:vertical;transition:border-color .15s" placeholder="Örn: Covered call için hedef fiyat $25, Flight 8 katalizörünü bekliyorum...">' + escHtml(tickerNotes[ticker]||'') + '</textarea>' +
+        '<button class="btn-buy" data-action="hnote-save" style="margin-top:8px">💾 Notu Kaydet</button>' +
+        (tickerNotes[ticker] ? '<button class="btn-ghost" data-action="hnote-delete">Notu Sil</button>' : '') +
+      '</div>' +
+
       '<button class="btn-ghost" data-action="hclose">Kapat</button>' +
     '</div>';
 
@@ -829,12 +845,19 @@ function openHolding(ticker){
       if(a==='hedit')       doHoldingEdit(ticker);
       if(a==='hdelete')     deleteHolding(ticker);
       if(a==='hclose')      m.remove();
+      if(a==='hnote-save'){
+        var noteEl = document.getElementById('hn_note');
+        var noteVal = noteEl ? noteEl.value.trim() : '';
+        if(noteVal){ tickerNotes[ticker]=noteVal; } else { delete tickerNotes[ticker]; }
+        saveNotes(); m.remove(); renderPortfolio();
+      }
+      if(a==='hnote-delete'){ delete tickerNotes[ticker]; saveNotes(); m.remove(); renderPortfolio(); }
     }
   });
 }
 
 function switchHTab(tab){
-  ['info','buy','sell','edit'].forEach(function(t){
+  ['info','buy','sell','edit','note'].forEach(function(t){
     var btn = document.getElementById('htab-' + t);
     var con = document.getElementById('htab-' + t + '-content');
     if(btn) btn.className = 'tab-btn' + (t==='sell'?' sell':' buy');
@@ -945,6 +968,8 @@ function renderPortfolio(){
     var pnlColor=h.unrealizedPnl>=0?'var(--emerald)':'var(--rose)';
     var weightPct=totalMV>0?h.marketValue/totalMV*100:0;
     var sc=SECTOR_COLORS[h.sector]||SECTOR_COLORS['Diğer'];
+    var ccReminder = h.qty >= 100 ? '<div style="margin:0 16px 10px;background:rgba(167,139,250,0.10);border:1px solid rgba(167,139,250,0.25);border-radius:9px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:13px">📣</span><span style="font-size:11px;color:#A78BFA;font-weight:600">'+Math.floor(h.qty/100)+' kontrat Covered Call yazılabilir</span></div>' : '';
+    var noteStr = tickerNotes[h.ticker] ? '<div style="margin:0 16px 10px;background:rgba(255,176,32,0.07);border:1px solid rgba(255,176,32,0.18);border-radius:9px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:13px">📝</span><span style="font-size:11px;color:var(--amber);font-weight:500;flex:1;word-break:break-word">'+escHtml(tickerNotes[h.ticker])+'</span></div>' : '';
     return '<div class="hcard" onclick="openHolding(\'' + h.ticker + '\')">'+
       '<div class="hc-head">'+
         '<div class="hc-color" style="background:'+c+'"></div>'+
@@ -963,6 +988,8 @@ function renderPortfolio(){
         '<div><div class="hc-m-lbl">Ort. Maliyet</div><div class="hc-m-val">'+fmt$(h.avgCost)+'</div></div>'+
         '<div><div class="hc-m-lbl">Portföy %</div><div class="hc-m-val">'+weightPct.toFixed(1)+'%</div></div>'+
       '</div>'+
+      ccReminder+
+      noteStr+
       '<div class="hc-bar-wrap">'+
         '<div class="hc-bar-lbl"><span>Portföyde ağırlık</span><span style="color:'+c+'">'+weightPct.toFixed(1)+'%</span></div>'+
         '<div class="hc-bar"><div class="hc-bar-fill" style="width:'+Math.min(100,weightPct*3)+'%;background:'+c+'"></div></div>'+
@@ -1131,7 +1158,7 @@ function renderVergi(){
       '<div class="vtype" style="background:var(--rose-bg);color:var(--rose)">SAT</div>'+
       '<div class="vm" style="color:'+(r.pnlUSD>=0?'var(--emerald)':'var(--rose)')+'">'+fmt$(r.pnlUSD)+'</div>'+
       '<div class="vm">'+fmt$(s.komisyon)+'</div>'+
-      '<div class="vm" style="color:var(--amber)">'+(r.kur>0?r.kur.toFixed(2):'<span style="color:var(--amber)">—</span>')+'</div>'+
+      '<div class="vm" style="color:var(--amber)">'+(r.kur>0?r.kur.toFixed(4):'<span style="color:var(--amber)">—</span>')+'</div>'+
       '<div class="vm" style="font-weight:700;color:'+mc+'">'+mt+'</div>'+
     '</div>';
   }).join('')||'<div class="empty" style="padding:16px">Bu yılda satış işlemi yok</div>';
@@ -1145,7 +1172,7 @@ function renderKurListesi(){
     return '<div class="kur-row">'+
       '<span class="kd">'+d+'</span>'+
       '<div style="display:flex;align-items:center;gap:9px">'+
-        '<span class="kr">'+parseFloat(kurData[d]).toFixed(2)+' ₺</span>'+
+        '<span class="kr">'+parseFloat(kurData[d]).toFixed(4)+' ₺</span>'+
         '<span class="kdel" onclick="kurSil(this.dataset.d)" data-d="'+d+'">Sil</span>'+
       '</div>'+
     '</div>';
@@ -1263,12 +1290,146 @@ function resetAll(){
     localStorage.removeItem(LS_KUR);
     localStorage.removeItem(LS_TAX);
     localStorage.removeItem(LS_PRICE);
-    txData=[]; kurData={}; taxExtra={}; prices={};
+    localStorage.removeItem(LS_NOTES);
+    txData=[]; kurData={}; taxExtra={}; prices={}; tickerNotes={};
     m.remove();
     renderPortfolio();
   };
 }
 
+
+// ─── METRİKLER ───────────────────────
+function renderMetrics(){
+  var holdings = computeHoldings();
+  var totalMV  = holdings.reduce(function(s,h){return s+h.marketValue;},0);
+  var totalCost= holdings.reduce(function(s,h){return s+h.costBasis;},0);
+  var totalPnl = totalMV - totalCost;
+  var totalPct = totalCost>0 ? totalPnl/totalCost*100 : 0;
+
+  // Concentration risk: top holding weight
+  var weights = holdings.map(function(h){ return totalMV>0 ? h.marketValue/totalMV : 0; });
+  var maxWeight = weights.length ? Math.max.apply(null,weights)*100 : 0;
+  var topHolder = holdings.length ? holdings.reduce(function(a,b){ return a.marketValue>b.marketValue?a:b; }) : null;
+
+  // Herfindahl–Hirschman concentration index (0–1)
+  var hhi = weights.reduce(function(s,w){ return s+w*w; }, 0);
+  var hhiPct = hhi*100;
+
+  // Winners / Losers
+  var winners = holdings.filter(function(h){ return h.unrealizedPnl>0; });
+  var losers  = holdings.filter(function(h){ return h.unrealizedPnl<0; });
+  var winRate = holdings.length ? (winners.length/holdings.length*100) : 0;
+
+  // Sector diversification
+  var secMap = {};
+  holdings.forEach(function(h){
+    secMap[h.sector] = (secMap[h.sector]||0) + h.marketValue;
+  });
+  var secCount = Object.keys(secMap).length;
+  var maxSecPct = totalMV>0 ? Math.max.apply(null, Object.values(secMap).map(function(v){return v/totalMV*100;})) : 0;
+
+  // Best / worst positions
+  var sorted = holdings.slice().sort(function(a,b){return b.unrealizedPct-a.unrealizedPct;});
+  var best3  = sorted.slice(0,3);
+  var worst3 = sorted.slice(-3).reverse();
+
+  // Covered call opportunities
+  var ccOpp = holdings.filter(function(h){ return h.qty>=100; });
+
+  // Avg position size
+  var avgPos = holdings.length ? totalMV/holdings.length : 0;
+
+  // Largest drawdown position
+  var maxDrawdown = losers.length ? losers.reduce(function(a,b){ return a.unrealizedPct<b.unrealizedPct?a:b; }) : null;
+
+  var mc = document.getElementById('metricsContent');
+  if(!mc) return;
+
+  function mCard(label, value, sub, color){
+    color = color||'var(--sky)';
+    return '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+      '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin-bottom:6px">'+label+'</div>'+
+      '<div style="font-size:20px;font-weight:800;font-family:DM Mono,monospace;color:'+color+'">'+value+'</div>'+
+      (sub?'<div style="font-size:10px;color:var(--ink3);margin-top:3px">'+sub+'</div>':'')+'</div>';
+  }
+
+  function rankBar(label, value, color, subtitle){
+    return '<div style="margin-bottom:12px">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:5px">'+
+        '<span style="font-size:12px;font-weight:700;color:var(--ink)">'+label+'</span>'+
+        '<span style="font-size:12px;font-weight:700;color:'+color+'">'+value+'</span></div>'+
+      (subtitle?'<div style="font-size:10px;color:var(--ink3)">'+subtitle+'</div>':'')+'</div>';
+  }
+
+  // Risk level
+  var riskLabel, riskColor;
+  if(hhiPct>20){riskLabel='Yüksek Konsantrasyon';riskColor='var(--rose)';}
+  else if(hhiPct>10){riskLabel='Orta Konsantrasyon';riskColor='var(--amber)';}
+  else{riskLabel='İyi Çeşitlendirilmiş';riskColor='var(--emerald)';}
+
+  mc.innerHTML =
+    // Summary grid
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px">'+
+      mCard('Toplam Getiri', (totalPct>=0?'+':'')+totalPct.toFixed(2)+'%', fmt$(totalPnl), totalPnl>=0?'var(--emerald)':'var(--rose)')+
+      mCard('Hisse Sayısı', holdings.length+' pozisyon', secCount+' farklı sektör', 'var(--sky)')+
+      mCard('Kazanan/Kaybeden', winners.length+' / '+losers.length, 'Win rate: '+winRate.toFixed(0)+'%', winRate>=50?'var(--emerald)':'var(--amber)')+
+      mCard('Ort. Pozisyon', fmt$(avgPos), 'Toplam: '+fmt$(totalMV), 'var(--violet)')+
+    '</div>'+
+
+    // Risk section
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+        '<div style="font-size:13px;font-weight:800;color:var(--ink)">⚖️ Risk Analizi</div>'+
+        '<div style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06);color:'+riskColor+'">'+riskLabel+'</div>'+
+      '</div>'+
+      rankBar('Konsantrasyon (HHI)', hhiPct.toFixed(1)+'%', riskColor, 'Düşük = iyi çeşitlendirme. <10%: iyi, 10-20%: orta, >20%: riskli')+
+      rankBar('En Büyük Pozisyon', maxWeight.toFixed(1)+'%', maxWeight>25?'var(--rose)':maxWeight>15?'var(--amber)':'var(--emerald)', topHolder?topHolder.ticker+' ('+fmt$(topHolder.marketValue)+')':'')+
+      rankBar('Sektör Çeşitliliği', secCount+' sektör', secCount>=4?'var(--emerald)':'var(--amber)', 'En büyük sektör: '+maxSecPct.toFixed(1)+'%')+
+    '</div>'+
+
+    // Covered Call opportunities
+    (ccOpp.length?
+    '<div style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.22);border-radius:14px;padding:16px;margin-bottom:16px">'+
+      '<div style="font-size:13px;font-weight:800;color:#A78BFA;margin-bottom:12px">📣 Covered Call Fırsatları</div>'+
+      ccOpp.map(function(h){
+        var contracts = Math.floor(h.qty/100);
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(167,139,250,0.12)">'+
+          '<div><div style="font-size:13px;font-weight:700;color:var(--ink)">'+h.ticker+'</div>'+
+          '<div style="font-size:10px;color:var(--ink3)">'+h.qty+' adet · '+fmt$(h.marketValue)+'</div></div>'+
+          '<div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#A78BFA">'+contracts+' kontrat</div>'+
+          '<div style="font-size:10px;color:var(--ink3)">yazılabilir</div></div></div>';
+      }).join('')+
+    '</div>' : '')+
+
+    // Best performers
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+      '<div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px">🏆 En İyi Performans</div>'+
+      best3.map(function(h){
+        var c=tickerColor(h.ticker);
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rim)">'+
+          '<div style="display:flex;align-items:center;gap:9px">'+
+            '<div style="width:32px;height:32px;border-radius:9px;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">'+h.ticker.slice(0,4)+'</div>'+
+            '<div><div style="font-size:13px;font-weight:700;color:var(--ink)">'+h.ticker+'</div><div style="font-size:10px;color:var(--ink3)">'+h.qty+' adet</div></div></div>'+
+          '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--emerald)">'+(h.unrealizedPct>=0?'+':'')+h.unrealizedPct.toFixed(2)+'%</div>'+
+          '<div style="font-size:10px;color:var(--ink3)">'+(h.unrealizedPnl>=0?'+':'')+fmt$(h.unrealizedPnl)+'</div></div></div>';
+      }).join('')+
+    '</div>'+
+
+    // Worst performers
+    (worst3.filter(function(h){return h.unrealizedPnl<0;}).length?
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+      '<div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px">📉 En Kötü Performans</div>'+
+      worst3.filter(function(h){return h.unrealizedPnl<0;}).map(function(h){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rim)">'+
+          '<div style="display:flex;align-items:center;gap:9px">'+
+            '<div style="width:32px;height:32px;border-radius:9px;background:var(--rose-bg);color:var(--rose);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">'+h.ticker.slice(0,4)+'</div>'+
+            '<div><div style="font-size:13px;font-weight:700;color:var(--ink)">'+h.ticker+'</div>'+
+            '<div style="font-size:10px;color:var(--ink3)">Maliyet: '+fmt$(h.avgCost)+' → Şimdi: '+fmt$(h.currentPrice)+'</div></div></div>'+
+          '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--rose)">'+h.unrealizedPct.toFixed(2)+'%</div>'+
+          '<div style="font-size:10px;color:var(--ink3)">'+fmt$(h.unrealizedPnl)+'</div></div></div>';
+      }).join('')+
+    '</div>' : '');
+}
 
 // ─── IBKR IMPORT ─────────────────────
 var IBKR_POSITIONS = [
