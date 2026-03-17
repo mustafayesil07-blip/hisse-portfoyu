@@ -309,9 +309,9 @@ body{
 .kr{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--amber)}
 .kdel{font-size:10px;color:var(--rose);cursor:pointer;padding:3px 8px;background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:6px;font-weight:700}
 
-.vtable{margin:0 20px 12px;background:var(--s1);border:1px solid var(--rim);border-radius:var(--r);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.vt-head{display:grid;grid-template-columns:1fr 50px 70px 70px 75px 85px;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--rim);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);gap:4px}
-.vt-row{display:grid;grid-template-columns:1fr 50px 70px 70px 75px 85px;padding:11px 14px;border-bottom:1px solid var(--rim);gap:4px;align-items:center}
+.vtable{margin:0 20px 12px;background:var(--s1);border:1px solid var(--rim);border-radius:var(--r);overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.vt-head{display:grid;grid-template-columns:1fr 50px 80px 80px 90px 95px;min-width:560px;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--rim);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);gap:4px}
+.vt-row{display:grid;grid-template-columns:1fr 50px 80px 80px 90px 95px;min-width:560px;padding:11px 14px;border-bottom:1px solid var(--rim);gap:4px;align-items:center}
 .vt-row:last-child{border-bottom:none}
 .vm{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
 .vtype{font-size:9px;padding:3px 6px;border-radius:5px;font-weight:700;text-align:center}
@@ -465,7 +465,7 @@ body{
   <div class="sh">
     <div><div class="sh-t">Vergi</div><div class="sh-s" id="vergiSub">—</div></div>
     <select id="vergiYil" onchange="renderVergi()" style="background:var(--s2);border:1px solid var(--rim);border-radius:9px;padding:6px 11px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;outline:none">
-      <option>2026</option><option>2025</option>
+      <option>2026</option><option>2025</option><option>Tümü</option>
     </select>
   </div>
 
@@ -490,10 +490,10 @@ body{
   <div style="padding:0 20px 8px">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">📋 İşlem Bazlı Vergi Tablosu</div>
   </div>
-  <div class="vtable">
+  <div class="vtable"><div style="min-width:560px">
     <div class="vt-head"><div>Hisse</div><div>İşlem</div><div>Tutar($)</div><div>Kom.($)</div><div>Kur(₺)</div><div>Matrah(₺)</div></div>
     <div id="vergiTablosu"></div>
-  </div>
+  </div></div>
 </div>
 
 <!-- ═══════════════════════════════
@@ -556,14 +556,25 @@ var LS_KUR   = 'portfolio_kur_v1';
 var LS_TAX   = 'portfolio_tax_v1';
 var LS_PRICE = 'portfolio_prices_v1';
 var LS_NOTES = 'portfolio_notes_v1';
+var LS_SEED_VER = 'portfolio_seed_ver';
+var CURRENT_SEED_VER = '20260317b'; // bump this whenever seed data changes
 
 // Transactions: [{id, ticker, sector, side:'buy'|'sell', qty, price, komisyon, date, note}]
 var txData = [];
 try { var _t=localStorage.getItem(LS_TX); if(_t) txData=JSON.parse(_t); } catch(e){}
 
 // Kur database
+var TCMB_KUR = {"2025-08-18":40.8084,"2025-09-12":41.209,"2025-09-15":41.255,"2025-09-19":41.2344,"2025-09-23":41.3375,"2025-09-24":41.3726,"2025-09-26":41.4179,"2025-09-29":41.4984,"2025-10-01":41.513,"2025-10-03":41.5226,"2025-10-06":41.6225,"2025-10-07":41.6217,"2025-10-08":41.633,"2025-10-09":41.6421,"2025-10-10":41.6388,"2025-10-13":41.7196,"2025-10-14":41.7496,"2025-10-15":41.7611,"2025-10-17":41.7855,"2025-10-20":41.8768,"2025-10-21":41.8872,"2025-10-22":41.8966,"2025-10-23":41.9042,"2025-10-24":41.8427,"2025-10-27":41.8699,"2025-10-28":41.8699,"2025-10-29":41.8699,"2025-10-30":41.9,"2025-10-31":41.8922,"2025-11-03":41.9751,"2025-11-04":42.0042,"2025-11-05":42.0362,"2025-11-10":42.1124,"2025-11-11":42.1526,"2025-11-12":42.1636,"2025-11-13":42.1724,"2025-11-14":42.1661,"2025-11-18":42.2641,"2025-11-19":42.2756,"2025-11-20":42.2882,"2025-11-21":42.2819,"2025-11-25":42.3668,"2025-11-26":42.3578,"2025-11-28":42.3547,"2025-12-04":42.3771,"2025-12-05":42.3606,"2025-12-08":42.4735,"2025-12-09":42.497,"2025-12-10":42.5179,"2025-12-11":42.5343,"2025-12-12":42.5344,"2025-12-15":42.6211,"2025-12-19":42.6532,"2025-12-22":42.734,"2025-12-26":42.7656,"2025-12-29":42.8542,"2025-12-31":42.8457,"2026-01-02":42.881,"2026-01-05":42.9648,"2026-01-06":42.9663,"2026-01-07":42.9743,"2026-01-08":42.9747,"2026-01-09":42.9863,"2026-01-12":43.0609,"2026-01-13":43.0765,"2026-01-14":43.0925,"2026-01-16":43.0883,"2026-01-19":43.1943,"2026-01-20":43.2061,"2026-01-21":43.2165,"2026-01-22":43.2247,"2026-01-23":43.2036,"2026-01-26":43.2978,"2026-01-27":43.3158,"2026-01-28":43.3327,"2026-01-29":43.3443,"2026-01-30":43.3414,"2026-02-02":43.4168,"2026-02-03":43.4142,"2026-02-04":43.4245,"2026-02-05":43.4555,"2026-02-06":43.4542,"2026-02-09":43.5182,"2026-02-10":43.545,"2026-02-11":43.5633,"2026-02-12":43.5702,"2026-02-13":43.5433,"2026-02-17":43.6524,"2026-02-18":43.6747,"2026-02-19":43.6913,"2026-02-20":43.6883,"2026-02-23":43.7542,"2026-02-24":43.7775,"2026-02-25":43.7888,"2026-02-26":43.8026,"2026-02-27":43.8,"2026-03-02":43.885,"2026-03-03":43.8913,"2026-03-04":43.8932,"2026-03-05":43.9135,"2026-03-06":43.9055,"2026-03-09":44.0007,"2026-03-10":43.9826,"2026-03-11":43.9964,"2026-03-12":44.031};
 var kurData = {};
 try { var _k=localStorage.getItem(LS_KUR); if(_k) kurData=JSON.parse(_k); } catch(e){}
+// Pre-load TCMB rates for any dates not already manually entered
+(function(){
+  var changed = false;
+  Object.keys(TCMB_KUR).forEach(function(d){
+    if(!kurData[d]){ kurData[d]=TCMB_KUR[d]; changed=true; }
+  });
+  if(changed) try{localStorage.setItem(LS_KUR,JSON.stringify(kurData));}catch(e){}
+})();
 
 // Tax extra data (komisyon overrides etc)
 var taxExtra = {};
@@ -584,12 +595,13 @@ function savePrices(){ try{localStorage.setItem(LS_PRICE, JSON.stringify(prices)
 function saveNotes() { try{localStorage.setItem(LS_NOTES, JSON.stringify(tickerNotes));}catch(e){} }
 
 // IBKR Import — real trades with commissions
-var IBKR_SEED_TX = [{"id": 1700000000000, "ticker": "CCJ", "sector": "Enerji", "side": "buy", "qty": 25, "price": 117.477, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000001, "ticker": "CEG", "sector": "Enerji", "side": "buy", "qty": 9, "price": 314.0, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000002, "ticker": "DPRO", "sector": "Teknoloji", "side": "buy", "qty": 191, "price": 10.385, "komisyon": 1.0, "date": "2026-01-20", "note": "IBKR import"}, {"id": 1700000000003, "ticker": "ETN", "sector": "Sanayi", "side": "buy", "qty": 9, "price": 346.865, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000004, "ticker": "FLY", "sector": "Havacilik", "side": "buy", "qty": 32, "price": 23.79, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}, {"id": 1700000000005, "ticker": "INTC", "sector": "Teknoloji", "side": "buy", "qty": 62, "price": 48.345, "komisyon": 1.0, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000006, "ticker": "LITE", "sector": "Teknoloji", "side": "buy", "qty": 1, "price": 640.54, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}, {"id": 1700000000007, "ticker": "MU", "sector": "Teknoloji", "side": "buy", "qty": 100, "price": 257.5, "komisyon": 0.0, "date": "2025-11-14", "note": "IBKR import"}, {"id": 1700000000008, "ticker": "MU", "sector": "Teknoloji", "side": "sell", "qty": 70, "price": 395.0, "komisyon": 1.01, "date": "2026-02-11", "note": "IBKR import"}, {"id": 1700000000009, "ticker": "ONDS", "sector": "Teknoloji", "side": "buy", "qty": 230, "price": 13.09, "komisyon": 1.15, "date": "2026-01-16", "note": "IBKR import"}, {"id": 1700000000010, "ticker": "ONDS", "sector": "Teknoloji", "side": "buy", "qty": 100, "price": 9.995, "komisyon": 1.0, "date": "2026-02-24", "note": "IBKR import"}, {"id": 1700000000011, "ticker": "PATH", "sector": "Teknoloji", "side": "buy", "qty": 200, "price": 14.0, "komisyon": 0.0, "date": "2026-02-17", "note": "IBKR import"}, {"id": 1700000000012, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "buy", "qty": 800, "price": 100.395, "komisyon": 4.02, "date": "2025-11-03", "note": "IBKR import"}, {"id": 1700000000013, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 500, "price": 100.6, "komisyon": 2.59, "date": "2025-11-21", "note": "IBKR import"}, {"id": 1700000000014, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 100, "price": 100.64, "komisyon": 1.02, "date": "2025-11-26", "note": "IBKR import"}, {"id": 1700000000015, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 200, "price": 100.64, "komisyon": 1.04, "date": "2025-11-26", "note": "IBKR import"}, {"id": 1700000000016, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "buy", "qty": 1000, "price": 100.47, "komisyon": 5.0, "date": "2025-12-09", "note": "IBKR import"}, {"id": 1700000000017, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 26, "price": 100.52, "komisyon": 1.0, "date": "2025-12-12", "note": "IBKR import"}, {"id": 1700000000018, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 510, "price": 100.53, "komisyon": 2.63, "date": "2025-12-15", "note": "IBKR import"}, {"id": 1700000000019, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 344, "price": 100.37, "komisyon": 1.78, "date": "2025-12-30", "note": "IBKR import"}, {"id": 1700000000020, "ticker": "SGOV", "sector": "Tahvil ETF", "side": "sell", "qty": 39, "price": 100.43, "komisyon": 1.01, "date": "2026-01-06", "note": "IBKR import"}, {"id": 1700000000021, "ticker": "SHOP", "sector": "E-Ticaret", "side": "buy", "qty": 100, "price": 145.0, "komisyon": 0.0, "date": "2026-02-12", "note": "IBKR import"}, {"id": 1700000000022, "ticker": "SOFI", "sector": "Fintech", "side": "buy", "qty": 500, "price": 28.0, "komisyon": 0.0, "date": "2025-12-12", "note": "IBKR import"}, {"id": 1700000000023, "ticker": "VRT", "sector": "Teknoloji", "side": "buy", "qty": 3, "price": 260.88, "komisyon": 1.0, "date": "2026-03-12", "note": "IBKR import"}];
-var IBKR_SEED_PRICES = {"CCJ": 107.92, "CEG": 301.77, "DPRO": 6.34, "ETN": 355.4, "FLY": 23.47, "INTC": 45.77, "LITE": 622.5, "MU": 426.13, "ONDS": 10.16, "PATH": 11.58, "SGOV": 100.52, "SHOP": 122.96, "SOFI": 17.76, "VRT": 258.88};
-if (!txData.length) {
+var IBKR_SEED_TX = [{"id":2000,"ticker":"DPRO","sector":"Teknoloji","side":"buy","qty":120,"price":8.2782,"komisyon":1.0,"date":"2026-01-26","note":"Mustafa IBKR"},{"id":2001,"ticker":"LPTH","sector":"Teknoloji","side":"buy","qty":200,"price":10.48,"komisyon":1.0,"date":"2026-01-26","note":"Mustafa IBKR"},{"id":2002,"ticker":"LUNR","sector":"Havacilik","side":"buy","qty":146,"price":20.45,"komisyon":1.0,"date":"2026-01-23","note":"Mustafa IBKR"},{"id":2003,"ticker":"SERV","sector":"Teknoloji","side":"buy","qty":230,"price":13.0111,"komisyon":1.15,"date":"2026-01-23","note":"Mustafa IBKR"},{"id":2004,"ticker":"SEZL","sector":"Teknoloji","side":"buy","qty":15,"price":68.06,"komisyon":1.0,"date":"2026-01-29","note":"Mustafa IBKR"},{"id":3000,"ticker":"CCJ","sector":"Enerji","side":"buy","qty":25,"price":117.477,"komisyon":1.0,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3001,"ticker":"CEG","sector":"Enerji","side":"buy","qty":9,"price":314.0,"komisyon":1.0,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3002,"ticker":"DPRO","sector":"Teknoloji","side":"buy","qty":191,"price":10.385,"komisyon":1.0,"date":"2026-01-20","note":"Edanur IBKR"},{"id":3003,"ticker":"ETN","sector":"Sanayi","side":"buy","qty":9,"price":346.865,"komisyon":1.0,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3004,"ticker":"FLY","sector":"Havacilik","side":"buy","qty":32,"price":23.79,"komisyon":1.0,"date":"2026-03-12","note":"Edanur IBKR"},{"id":3005,"ticker":"INTC","sector":"Teknoloji","side":"buy","qty":62,"price":48.345,"komisyon":1.0,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3006,"ticker":"LITE","sector":"Teknoloji","side":"buy","qty":1,"price":640.54,"komisyon":1.0,"date":"2026-03-12","note":"Edanur IBKR"},{"id":3007,"ticker":"MU","sector":"Teknoloji","side":"buy","qty":30,"price":253.0279,"komisyon":0.0,"date":"2025-11-14","note":"Edanur IBKR"},{"id":3008,"ticker":"ONDS","sector":"Teknoloji","side":"buy","qty":330,"price":12.1586,"komisyon":2.15,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3009,"ticker":"PATH","sector":"Yazilim","side":"buy","qty":200,"price":14.0,"komisyon":0.0,"date":"2026-02-17","note":"Edanur IBKR"},{"id":3010,"ticker":"SHOP","sector":"E-Ticaret","side":"buy","qty":100,"price":145.0,"komisyon":0.0,"date":"2026-02-12","note":"Edanur IBKR"},{"id":3011,"ticker":"SOFI","sector":"Fintech","side":"buy","qty":500,"price":28.0,"komisyon":0.0,"date":"2025-12-12","note":"Edanur IBKR"},{"id":3012,"ticker":"VRT","sector":"Teknoloji","side":"buy","qty":3,"price":260.88,"komisyon":1.0,"date":"2026-03-12","note":"Edanur IBKR"},{"id":3100,"ticker":"SGOV","sector":"Tahvil ETF","side":"buy","qty":800,"price":100.395,"komisyon":4.02,"date":"2025-11-03","note":"Edanur IBKR"},{"id":3101,"ticker":"SGOV","sector":"Tahvil ETF","side":"buy","qty":1000,"price":100.47,"komisyon":5.0,"date":"2025-12-09","note":"Edanur IBKR"},{"id":5100,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":500,"price":100.6,"komisyon":2.59,"date":"2025-11-21","note":"Edanur (kapandi-sat)"},{"id":5101,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":100,"price":100.64,"komisyon":1.02,"date":"2025-11-26","note":"Edanur (kapandi-sat)"},{"id":5102,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":200,"price":100.64,"komisyon":1.04,"date":"2025-11-26","note":"Edanur (kapandi-sat)"},{"id":5103,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":26,"price":100.52,"komisyon":1.0,"date":"2025-12-12","note":"Edanur (kapandi-sat)"},{"id":5104,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":510,"price":100.53,"komisyon":2.63,"date":"2025-12-15","note":"Edanur (kapandi-sat)"},{"id":5105,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":344,"price":100.37,"komisyon":1.78,"date":"2025-12-30","note":"Edanur (kapandi-sat)"},{"id":5106,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":39,"price":100.43,"komisyon":1.01,"date":"2026-01-06","note":"Edanur (kapandi-sat)"},{"id":4000,"ticker":"EOSE","sector":"Teknoloji","side":"buy","qty":500,"price":6.7253,"komisyon":2.5,"date":"2026-02-26","note":"Edanur (kapandi-al)"},{"id":4001,"ticker":"HIMS","sector":"Saglik","side":"buy","qty":1000,"price":38.5,"komisyon":0.0,"date":"2025-12-12","note":"Edanur (kapandi-al)"},{"id":4002,"ticker":"META","sector":"Sosyal Medya","side":"buy","qty":100,"price":665.0,"komisyon":0.0,"date":"2025-11-20","note":"Edanur (kapandi-al)"},{"id":4003,"ticker":"MU","sector":"Teknoloji","side":"buy","qty":100,"price":257.5,"komisyon":0.0,"date":"2025-11-14","note":"Edanur (kapandi-al)"},{"id":4004,"ticker":"NVDA","sector":"Teknoloji","side":"buy","qty":200,"price":195.0,"komisyon":0.0,"date":"2025-11-25","note":"Edanur (kapandi-al)"},{"id":4005,"ticker":"RZLT","sector":"Saglik","side":"buy","qty":1000,"price":7.5,"komisyon":0.0,"date":"2025-12-11","note":"Edanur (kapandi-al)"},{"id":4006,"ticker":"VPG","sector":"Teknoloji","side":"buy","qty":45,"price":45.03,"komisyon":1.0,"date":"2026-01-20","note":"Edanur (kapandi-al)"},{"id":5000,"ticker":"EOSE","sector":"Teknoloji","side":"sell","qty":500,"price":6.75,"komisyon":3.1,"date":"2026-02-26","note":"Edanur (kapandi-sat)"},{"id":5001,"ticker":"HIMS","sector":"Saglik","side":"sell","qty":200,"price":31.42,"komisyon":1.04,"date":"2026-01-16","note":"Edanur (kapandi-sat)"},{"id":5002,"ticker":"HIMS","sector":"Saglik","side":"sell","qty":800,"price":29.28,"komisyon":4.16,"date":"2026-01-27","note":"Edanur (kapandi-sat)"},{"id":5003,"ticker":"META","sector":"Sosyal Medya","side":"sell","qty":100,"price":640.0,"komisyon":0.02,"date":"2025-12-05","note":"Edanur (kapandi-sat)"},{"id":5004,"ticker":"MU","sector":"Teknoloji","side":"sell","qty":70,"price":395.0,"komisyon":1.01,"date":"2026-02-11","note":"Edanur (kapandi-sat)"},{"id":5005,"ticker":"NVDA","sector":"Teknoloji","side":"sell","qty":200,"price":177.5,"komisyon":0.03,"date":"2025-12-05","note":"Edanur (kapandi-sat)"},{"id":5006,"ticker":"RZLT","sector":"Saglik","side":"sell","qty":1000,"price":3.21,"komisyon":5.2,"date":"2026-03-09","note":"Edanur (kapandi-sat)"},{"id":5007,"ticker":"VPG","sector":"Teknoloji","side":"sell","qty":45,"price":45.05,"komisyon":1.01,"date":"2026-03-10","note":"Edanur (kapandi-sat)"}];
+var IBKR_SEED_PRICES = {"DPRO":6.41,"LPTH":11.0,"LUNR":17.69,"SERV":9.85,"SEZL":66.8,"CCJ":110.31,"CEG":305.58,"ETN":361.04,"FLY":23.93,"INTC":45.76,"LITE":624.84,"MU":441.8,"ONDS":10.53,"PATH":11.57,"SGOV":100.52,"SHOP":126.58,"SOFI":17.63,"VRT":264.74,"HIMS":20.5,"META":630.0,"NVDA":115.0,"RZLT":3.5,"EOSE":6.7,"VPG":45.05};
+if (!txData.length || localStorage.getItem(LS_SEED_VER) !== CURRENT_SEED_VER) {
   txData  = JSON.parse(JSON.stringify(IBKR_SEED_TX));
   prices  = JSON.parse(JSON.stringify(IBKR_SEED_PRICES));
   saveTx(); savePrices();
+  try { localStorage.setItem(LS_SEED_VER, CURRENT_SEED_VER); } catch(e) {}
 }
 
 // ─── SECTOR COLOR MAP ─────────────────
@@ -1173,9 +1185,13 @@ document.addEventListener('click',function(e){
 // ─── VERGİ ────────────────────────────
 function renderVergi(){
   var yil=document.getElementById('vergiYil')?document.getElementById('vergiYil').value:'2026';
-  // Use live txData (from localStorage or seed)
-  var allTx = txData.length ? txData : (typeof IBKR_SEED_TX!=='undefined' ? IBKR_SEED_TX : []);
-  var sells=allTx.filter(function(tx){return tx.side==='sell'&&tx.date&&tx.date.startsWith(yil);});
+  // Always use live txData; if empty fall back to seed
+  var allTx = (txData && txData.length) ? txData : (typeof IBKR_SEED_TX!=='undefined' ? IBKR_SEED_TX : []);
+  var sells=allTx.filter(function(tx){
+    if(tx.side!=='sell'||!tx.date) return false;
+    if(yil==='Tümü') return true;
+    return tx.date.startsWith(yil);
+  });
 
   // For each sell, calculate P&L using weighted avg cost of prior buys (FIFO avg)
   var rows=sells.map(function(sell){
@@ -1507,22 +1523,7 @@ function renderMetrics(){
 }
 
 // ─── IBKR IMPORT ─────────────────────
-var IBKR_POSITIONS = [
-  {ticker:'CCJ', qty:25,  avgCost:117.5170, currentPrice:107.9200, sector:'Enerji'},
-  {ticker:'CEG', qty:9,   avgCost:314.1111, currentPrice:301.7700, sector:'Enerji'},
-  {ticker:'DPRO',qty:191, avgCost:10.3902,  currentPrice:6.3400,   sector:'Teknoloji'},
-  {ticker:'ETN', qty:9,   avgCost:346.9761, currentPrice:355.4000, sector:'Endustri'},
-  {ticker:'FLY', qty:32,  avgCost:23.8213,  currentPrice:23.4700,  sector:'Havacilik'},
-  {ticker:'INTC',qty:62,  avgCost:48.3611,  currentPrice:45.7700,  sector:'Teknoloji'},
-  {ticker:'LITE',qty:1,   avgCost:641.5400, currentPrice:622.5000, sector:'Teknoloji'},
-  {ticker:'MU',  qty:30,  avgCost:253.0280, currentPrice:426.1300, sector:'Teknoloji'},
-  {ticker:'ONDS',qty:330, avgCost:12.1586,  currentPrice:10.1600,  sector:'Teknoloji'},
-  {ticker:'PATH',qty:200, avgCost:13.6570,  currentPrice:11.5800,  sector:'Yazilim'},
-  {ticker:'SGOV',qty:81,  avgCost:100.4750, currentPrice:100.5200, sector:'Tahvil'},
-  {ticker:'SHOP',qty:100, avgCost:140.8080, currentPrice:122.9600, sector:'E-Ticaret'},
-  {ticker:'SOFI',qty:500, avgCost:27.3639,  currentPrice:17.7600,  sector:'Finans'},
-  {ticker:'VRT', qty:3,   avgCost:261.2133, currentPrice:258.8800, sector:'Teknoloji'}
-];
+var IBKR_POSITIONS = [{"ticker":"DPRO","qty":311,"avgCost":9.7217,"currentPrice":6.41,"sector":"Teknoloji"},{"ticker":"LPTH","qty":200,"avgCost":10.48,"currentPrice":11.0,"sector":"Teknoloji"},{"ticker":"LUNR","qty":146,"avgCost":20.45,"currentPrice":17.69,"sector":"Havacilik"},{"ticker":"SERV","qty":230,"avgCost":13.0111,"currentPrice":9.85,"sector":"Teknoloji"},{"ticker":"SEZL","qty":15,"avgCost":68.06,"currentPrice":66.8,"sector":"Teknoloji"},{"ticker":"CCJ","qty":25,"avgCost":117.477,"currentPrice":110.31,"sector":"Enerji"},{"ticker":"CEG","qty":9,"avgCost":314.0,"currentPrice":305.58,"sector":"Enerji"},{"ticker":"ETN","qty":9,"avgCost":346.865,"currentPrice":361.04,"sector":"Sanayi"},{"ticker":"FLY","qty":32,"avgCost":23.79,"currentPrice":23.93,"sector":"Havacilik"},{"ticker":"INTC","qty":62,"avgCost":48.345,"currentPrice":45.76,"sector":"Teknoloji"},{"ticker":"LITE","qty":1,"avgCost":640.54,"currentPrice":624.84,"sector":"Teknoloji"},{"ticker":"MU","qty":60,"avgCost":279.1779,"currentPrice":441.8,"sector":"Teknoloji"},{"ticker":"ONDS","qty":330,"avgCost":12.1586,"currentPrice":10.53,"sector":"Teknoloji"},{"ticker":"PATH","qty":200,"avgCost":14.0,"currentPrice":11.57,"sector":"Yazilim"},{"ticker":"SGOV","qty":81,"avgCost":100.475,"currentPrice":100.52,"sector":"Tahvil ETF"},{"ticker":"SHOP","qty":100,"avgCost":145.0,"currentPrice":126.58,"sector":"E-Ticaret"},{"ticker":"SOFI","qty":500,"avgCost":28.0,"currentPrice":17.63,"sector":"Fintech"},{"ticker":"VRT","qty":3,"avgCost":260.88,"currentPrice":264.74,"sector":"Teknoloji"}];
 
 function ibkrImport(){
   var m=document.createElement('div');
