@@ -733,52 +733,47 @@ function setBtnState(btn, html, color, disabled) {
 function fetchQuote(symbol) {
   var url = PROXY_BASE + '/.netlify/functions/quote?symbol=' + encodeURIComponent(symbol);
   return fetch(url, { method: 'GET' })
-    .then(function (r) {
-      if (!r.ok) return r.json().then(function (e) { throw new Error(e.error || r.status); });
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(e){ throw new Error(e.error || r.status); });
       return r.json();
     });
 }
 
-// Fetch all quotes — tries bulk first, falls back to one-by-one
 function fetchAllQuotes(tickers) {
   if (tickers.length === 0) return Promise.resolve({});
-
-  // Bulk request: /api/quote?symbol=A,B,C
   var url = PROXY_BASE + '/.netlify/functions/quote?symbol=' + tickers.map(encodeURIComponent).join(',');
   return fetch(url)
-    .then(function (r) {
+    .then(function(r) {
       if (!r.ok) throw new Error('bulk ' + r.status);
       return r.json();
     })
-    .then(function (data) {
+    .then(function(data) {
       var map = {};
       var list = data.quotes || (data.symbol ? [data] : []);
-      list.forEach(function (q) {
+      list.forEach(function(q) {
         if (q.symbol && q.price && q.price > 0) {
-          map[q.symbol.toUpperCase()] = q; // store full quote object
+          map[q.symbol.toUpperCase()] = q;
         }
       });
       if (Object.keys(map).length === 0) throw new Error('bulk returned no prices');
       return map;
     })
-    .catch(function (bulkErr) {
-      console.warn('[portfolio] Bulk fetch failed (' + bulkErr.message + '), falling back to sequential');
-      // Sequential fallback: one request per ticker
+    .catch(function(bulkErr) {
+      console.warn('[portfolio] Bulk failed (' + bulkErr.message + '), going sequential');
       var map = {};
       var chain = Promise.resolve();
-      tickers.forEach(function (ticker) {
-        chain = chain.then(function () {
+      tickers.forEach(function(ticker) {
+        chain = chain.then(function() {
           return fetchQuote(ticker)
-            .then(function (q) {
-              if (q && q.price > 0) map[ticker.toUpperCase()] = q; // full quote object
+            .then(function(q) {
+              if (q && q.price > 0) map[ticker.toUpperCase()] = q;
             })
-            .catch(function (e) {
+            .catch(function(e) {
               console.warn('[portfolio] Quote failed for', ticker, ':', e.message);
-              // Keep going — don't crash on a single failure
             });
         });
       });
-      return chain.then(function () { return map; });
+      return chain.then(function() { return map; });
     });
 }
 
@@ -786,20 +781,35 @@ function fetchAllPrices() {
   if (_fetchInProgress) return;
   var holdings = computeHoldings();
   if (!holdings.length) return;
-  var tickers = holdings.map(function (h) { return h.ticker; });
+  var tickers = holdings.map(function(h) { return h.ticker; });
   var btn = document.getElementById('refreshBtn');
   setBtnState(btn, '⟳ Güncelleniyor...', '#FFB020', true);
   _fetchInProgress = true;
 
   fetchAllQuotes(tickers)
-    .then(function (map) {
+    .then(function(map) {
       var updated = 0;
-      Object.keys(map).forEach(function (t) {
-        var p = parseFloat(map[t]);
-        if (p > 0) { prices[t] = Math.round(p * 100) / 100; updated++; }
+      Object.keys(map).forEach(function(t) {
+        var q = map[t];
+        if (!q) return;
+        // q is a full quote object: { symbol, price, previousClose, change, changePct, ... }
+        var p = typeof q === 'object' ? q.price : parseFloat(q);
+        if (p && p > 0) {
+          prices[t] = Math.round(p * 100) / 100;
+          if (typeof q === 'object' && q.changePct != null) {
+            dayChange[t] = {
+              change:        q.change,
+              changePct:     q.changePct,
+              previousClose: q.previousClose
+            };
+          }
+          updated++;
+        }
       });
+
       _fetchInProgress = false;
       savePrices();
+      saveDayChange();
       renderPortfolio();
       if (curScreen === 'dist')    renderDist();
       if (curScreen === 'metrics') renderMetrics();
@@ -809,24 +819,23 @@ function fetchAllPrices() {
       var total = tickers.length;
       if (updated === 0) {
         setBtnState(btn, '✗ Fiyat alınamadı', '#FF4F7B', false);
-        console.error('[portfolio] No prices returned. PROXY_BASE =', PROXY_BASE || '(same origin)', '— Netlify deploy yapıldı mı?');
       } else if (updated < total) {
         setBtnState(btn, '⚠ ' + updated + '/' + total + ' Güncellendi', '#FFB020', false);
       } else {
         setBtnState(btn, '✓ ' + updated + '/' + total + ' Güncellendi', '#10D48E', false);
       }
-      setTimeout(function () { setBtnState(btn, 'Fiyat Güncelle', '#10D48E', false); }, 5000);
+      setTimeout(function() { setBtnState(btn, 'Fiyat Güncelle', '#10D48E', false); }, 5000);
     })
-    .catch(function (err) {
+    .catch(function(err) {
       _fetchInProgress = false;
       console.error('[portfolio] fetchAllPrices error:', err);
       if (btn) {
         setBtnState(btn, '✗ Proxy hatası', '#FF4F7B', false);
-        console.error('[portfolio] Proxy erişilemiyor. PROXY_BASE =', PROXY_BASE || '(same origin)');
-        setTimeout(function () { setBtnState(btn, 'Fiyat Güncelle', '#10D48E', false); }, 5000);
+        setTimeout(function() { setBtnState(btn, 'Fiyat Güncelle', '#10D48E', false); }, 5000);
       }
     });
 }
+
 
 function openHolding(ticker){
   var holdings = computeHoldings();
