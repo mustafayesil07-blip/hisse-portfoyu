@@ -556,6 +556,7 @@ var LS_KUR   = 'portfolio_kur_v1';
 var LS_TAX   = 'portfolio_tax_v1';
 var LS_PRICE = 'portfolio_prices_v1';
 var LS_NOTES = 'portfolio_notes_v1';
+var LS_DAYCHANGE = 'portfolio_daychange_v1';
 var LS_SEED_VER = 'portfolio_seed_ver';
 var CURRENT_SEED_VER = '20260317e'; // bump this whenever seed data changes
 
@@ -584,6 +585,10 @@ try { var _tx=localStorage.getItem(LS_TAX); if(_tx) taxExtra=JSON.parse(_tx); } 
 var prices = {};
 try { var _p=localStorage.getItem(LS_PRICE); if(_p) prices=JSON.parse(_p); } catch(e){}
 
+// Day change data: { TICKER: { change, changePct, previousClose } }
+var dayChange = {};
+try { var _dc=localStorage.getItem(LS_DAYCHANGE); if(_dc) dayChange=JSON.parse(_dc); } catch(e){}
+
 // Ticker notes
 var tickerNotes = {};
 try { var _n=localStorage.getItem(LS_NOTES); if(_n) tickerNotes=JSON.parse(_n); } catch(e){}
@@ -592,7 +597,8 @@ function saveTx()    { try{localStorage.setItem(LS_TX,    JSON.stringify(txData)
 function saveKur()   { try{localStorage.setItem(LS_KUR,   JSON.stringify(kurData));}catch(e){} }
 function saveTax()   { try{localStorage.setItem(LS_TAX,   JSON.stringify(taxExtra));}catch(e){} }
 function savePrices(){ try{localStorage.setItem(LS_PRICE, JSON.stringify(prices));}catch(e){} }
-function saveNotes() { try{localStorage.setItem(LS_NOTES, JSON.stringify(tickerNotes));}catch(e){} }
+function saveNotes()     { try{localStorage.setItem(LS_NOTES,     JSON.stringify(tickerNotes));}catch(e){} }
+function saveDayChange() { try{localStorage.setItem(LS_DAYCHANGE, JSON.stringify(dayChange));}catch(e){} }
 
 // IBKR Import — real trades with commissions
 var IBKR_SEED_TX = [{"id":2000,"ticker":"DPRO","sector":"Teknoloji","side":"buy","qty":120,"price":8.2782,"komisyon":1.0,"date":"2026-01-26","note":"Mustafa IBKR"},{"id":2001,"ticker":"LPTH","sector":"Teknoloji","side":"buy","qty":200,"price":10.48,"komisyon":1.0,"date":"2026-01-26","note":"Mustafa IBKR"},{"id":2002,"ticker":"LUNR","sector":"Havacilik","side":"buy","qty":146,"price":20.45,"komisyon":1.0,"date":"2026-01-23","note":"Mustafa IBKR"},{"id":2003,"ticker":"SERV","sector":"Teknoloji","side":"buy","qty":230,"price":13.0111,"komisyon":1.15,"date":"2026-01-23","note":"Mustafa IBKR"},{"id":2004,"ticker":"SEZL","sector":"Teknoloji","side":"buy","qty":15,"price":68.06,"komisyon":1.0,"date":"2026-01-29","note":"Mustafa IBKR"},{"id":3000,"ticker":"CCJ","sector":"Enerji","side":"buy","qty":25,"price":117.477,"komisyon":1.0,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3001,"ticker":"CEG","sector":"Enerji","side":"buy","qty":9,"price":314.0,"komisyon":1.0,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3002,"ticker":"DPRO","sector":"Teknoloji","side":"buy","qty":191,"price":10.385,"komisyon":1.0,"date":"2026-01-20","note":"Edanur IBKR"},{"id":3003,"ticker":"ETN","sector":"Sanayi","side":"buy","qty":9,"price":346.865,"komisyon":1.0,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3004,"ticker":"FLY","sector":"Havacilik","side":"buy","qty":32,"price":23.79,"komisyon":1.0,"date":"2026-03-12","note":"Edanur IBKR"},{"id":3005,"ticker":"INTC","sector":"Teknoloji","side":"buy","qty":62,"price":48.345,"komisyon":1.0,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3006,"ticker":"LITE","sector":"Teknoloji","side":"buy","qty":1,"price":640.54,"komisyon":1.0,"date":"2026-03-12","note":"Edanur IBKR"},{"id":3008,"ticker":"ONDS","sector":"Teknoloji","side":"buy","qty":330,"price":12.1586,"komisyon":2.15,"date":"2026-01-16","note":"Edanur IBKR"},{"id":3009,"ticker":"PATH","sector":"Yazilim","side":"buy","qty":200,"price":14.0,"komisyon":0.0,"date":"2026-02-17","note":"Edanur IBKR"},{"id":3010,"ticker":"SHOP","sector":"E-Ticaret","side":"buy","qty":100,"price":145.0,"komisyon":0.0,"date":"2026-02-12","note":"Edanur IBKR"},{"id":3011,"ticker":"SOFI","sector":"Fintech","side":"buy","qty":500,"price":28.0,"komisyon":0.0,"date":"2025-12-12","note":"Edanur IBKR"},{"id":3012,"ticker":"VRT","sector":"Teknoloji","side":"buy","qty":3,"price":260.88,"komisyon":1.0,"date":"2026-03-12","note":"Edanur IBKR"},{"id":3100,"ticker":"SGOV","sector":"Tahvil ETF","side":"buy","qty":800,"price":100.395,"komisyon":4.02,"date":"2025-11-03","note":"Edanur IBKR"},{"id":3101,"ticker":"SGOV","sector":"Tahvil ETF","side":"buy","qty":1000,"price":100.47,"komisyon":5.0,"date":"2025-12-09","note":"Edanur IBKR"},{"id":5100,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":500,"price":100.6,"komisyon":2.59,"date":"2025-11-21","note":"Edanur (kapandi-sat)"},{"id":5101,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":100,"price":100.64,"komisyon":1.02,"date":"2025-11-26","note":"Edanur (kapandi-sat)"},{"id":5102,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":200,"price":100.64,"komisyon":1.04,"date":"2025-11-26","note":"Edanur (kapandi-sat)"},{"id":5103,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":26,"price":100.52,"komisyon":1.0,"date":"2025-12-12","note":"Edanur (kapandi-sat)"},{"id":5104,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":510,"price":100.53,"komisyon":2.63,"date":"2025-12-15","note":"Edanur (kapandi-sat)"},{"id":5105,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":344,"price":100.37,"komisyon":1.78,"date":"2025-12-30","note":"Edanur (kapandi-sat)"},{"id":5106,"ticker":"SGOV","sector":"Tahvil ETF","side":"sell","qty":39,"price":100.43,"komisyon":1.01,"date":"2026-01-06","note":"Edanur (kapandi-sat)"},{"id":4000,"ticker":"EOSE","sector":"Teknoloji","side":"buy","qty":500,"price":6.7253,"komisyon":2.5,"date":"2026-02-26","note":"Edanur (kapandi-al)"},{"id":4001,"ticker":"HIMS","sector":"Saglik","side":"buy","qty":1000,"price":38.5,"komisyon":0.0,"date":"2025-12-12","note":"Edanur (kapandi-al)"},{"id":4002,"ticker":"META","sector":"Sosyal Medya","side":"buy","qty":100,"price":665.0,"komisyon":0.0,"date":"2025-11-20","note":"Edanur (kapandi-al)"},{"id":4003,"ticker":"MU","sector":"Teknoloji","side":"buy","qty":100,"price":257.5,"komisyon":0.0,"date":"2025-11-14","note":"Edanur (kapandi-al)"},{"id":4004,"ticker":"NVDA","sector":"Teknoloji","side":"buy","qty":200,"price":195.0,"komisyon":0.0,"date":"2025-11-25","note":"Edanur (kapandi-al)"},{"id":4005,"ticker":"RZLT","sector":"Saglik","side":"buy","qty":1000,"price":7.5,"komisyon":0.0,"date":"2025-12-11","note":"Edanur (kapandi-al)"},{"id":4006,"ticker":"VPG","sector":"Teknoloji","side":"buy","qty":45,"price":45.03,"komisyon":1.0,"date":"2026-01-20","note":"Edanur (kapandi-al)"},{"id":5000,"ticker":"EOSE","sector":"Teknoloji","side":"sell","qty":500,"price":6.75,"komisyon":3.1,"date":"2026-02-26","note":"Edanur (kapandi-sat)"},{"id":5001,"ticker":"HIMS","sector":"Saglik","side":"sell","qty":200,"price":31.42,"komisyon":1.04,"date":"2026-01-16","note":"Edanur (kapandi-sat)"},{"id":5002,"ticker":"HIMS","sector":"Saglik","side":"sell","qty":800,"price":29.28,"komisyon":4.16,"date":"2026-01-27","note":"Edanur (kapandi-sat)"},{"id":5003,"ticker":"META","sector":"Sosyal Medya","side":"sell","qty":100,"price":640.0,"komisyon":0.02,"date":"2025-12-05","note":"Edanur (kapandi-sat)"},{"id":5004,"ticker":"MU","sector":"Teknoloji","side":"sell","qty":70,"price":395.0,"komisyon":1.01,"date":"2026-02-11","note":"Edanur (kapandi-sat)"},{"id":5005,"ticker":"NVDA","sector":"Teknoloji","side":"sell","qty":200,"price":177.5,"komisyon":0.03,"date":"2025-12-05","note":"Edanur (kapandi-sat)"},{"id":5006,"ticker":"RZLT","sector":"Saglik","side":"sell","qty":1000,"price":3.21,"komisyon":5.2,"date":"2026-03-09","note":"Edanur (kapandi-sat)"},{"id":5007,"ticker":"VPG","sector":"Teknoloji","side":"sell","qty":45,"price":45.05,"komisyon":1.01,"date":"2026-03-10","note":"Edanur (kapandi-sat)"}];
@@ -746,14 +752,12 @@ function fetchAllQuotes(tickers) {
     })
     .then(function (data) {
       var map = {};
-      // Bulk response: { quotes: [{symbol, price, ...}] }
       var list = data.quotes || (data.symbol ? [data] : []);
       list.forEach(function (q) {
         if (q.symbol && q.price && q.price > 0) {
-          map[q.symbol.toUpperCase()] = q.price;
+          map[q.symbol.toUpperCase()] = q; // store full quote object
         }
       });
-      // If bulk returned nothing, throw so we fall back
       if (Object.keys(map).length === 0) throw new Error('bulk returned no prices');
       return map;
     })
@@ -766,7 +770,7 @@ function fetchAllQuotes(tickers) {
         chain = chain.then(function () {
           return fetchQuote(ticker)
             .then(function (q) {
-              if (q && q.price > 0) map[ticker.toUpperCase()] = q.price;
+              if (q && q.price > 0) map[ticker.toUpperCase()] = q; // full quote object
             })
             .catch(function (e) {
               console.warn('[portfolio] Quote failed for', ticker, ':', e.message);
@@ -1037,11 +1041,46 @@ function renderPortfolio(){
     hp.textContent=(totalPnl>=0?'+':'')+fmt$(totalPnl)+' ('+fmtPct(totalPct)+')';
     hp.className='badge '+(totalPnl>=0?'b-up':'b-dn');
   }
-  var hs=document.getElementById('heroSub'); if(hs) hs.textContent='Unrealized P&L';
+  // Portfolio daily change
+  var totalDayChangeDollar = holdings.reduce(function(s,h){
+    var dc = dayChange[h.ticker];
+    return s + (dc && dc.change ? dc.change * h.qty : 0);
+  }, 0);
+  var prevTotalMV = holdings.reduce(function(s,h){
+    var dc = dayChange[h.ticker];
+    var prev = dc && dc.previousClose ? dc.previousClose : h.currentPrice;
+    return s + prev * h.qty;
+  }, 0);
+  var totalDayChangePct = prevTotalMV > 0 ? totalDayChangeDollar / prevTotalMV * 100 : 0;
+  var hs=document.getElementById('heroSub');
+  if(hs){
+    var hasDayData = Object.keys(dayChange).length > 0;
+    if(hasDayData && totalDayChangeDollar !== 0){
+      var dc$=fmt$(Math.abs(totalDayChangeDollar));
+      var dcSign=totalDayChangeDollar>=0?'+':'-';
+      var dcColor=totalDayChangeDollar>=0?'var(--emerald)':'var(--rose)';
+      hs.innerHTML='Unrealized P&L &nbsp;|&nbsp; Bugün: <span style="color:'+dcColor+';font-weight:700">'+dcSign+dc$+' ('+dcSign+Math.abs(totalDayChangePct).toFixed(2)+'%)</span>';
+    } else {
+      hs.textContent='Unrealized P&L';
+    }
+  }
   var hm=document.getElementById('heroMaliyet'); if(hm) hm.textContent=fmt$(totalCost).replace('$','');
   var hk=document.getElementById('heroKazanc');
   if(hk){hk.textContent=(totalPnl>=0?'+':'')+fmt$(totalPnl).replace('$','');hk.style.color=totalPnl>=0?'var(--emerald)':'var(--rose)';}
   var hc=document.getElementById('heroCount'); if(hc) hc.textContent=holdings.length;
+
+  // Sort by daily change % descending (best performers first)
+  // Holdings with no dayChange data go to end, sorted by unrealizedPct
+  holdings.sort(function(a, b){
+    var dcA = dayChange[a.ticker];
+    var dcB = dayChange[b.ticker];
+    var pctA = (dcA && dcA.changePct != null) ? dcA.changePct : null;
+    var pctB = (dcB && dcB.changePct != null) ? dcB.changePct : null;
+    if(pctA !== null && pctB !== null) return pctB - pctA;
+    if(pctA !== null) return -1;
+    if(pctB !== null) return 1;
+    return b.unrealizedPct - a.unrealizedPct;
+  });
 
   var list=document.getElementById('holdingsList');
   if(!list) return;
@@ -1071,9 +1110,20 @@ function renderPortfolio(){
         '</div>'+
       '</div>'+
       '<div class="hc-grid">'+
-        '<div><div class="hc-m-lbl">Güncel Fiyat</div><div class="hc-m-val" style="color:'+c+'">'+fmt$(h.currentPrice)+'</div></div>'+
-        '<div><div class="hc-m-lbl">Ort. Maliyet</div><div class="hc-m-val">'+fmt$(h.avgCost)+'</div></div>'+
-        '<div><div class="hc-m-lbl">Portföy %</div><div class="hc-m-val">'+weightPct.toFixed(1)+'%</div></div>'+
+        (function(){
+          var dc=dayChange[h.ticker];
+          var dayStr='—'; var dayColor='var(--ink2)';
+          if(dc && dc.changePct!=null){
+            var sign=dc.changePct>=0?'+':'-';
+            var abs=Math.abs(dc.changePct).toFixed(2);
+            var absDollar=fmt$(Math.abs(dc.change||0));
+            dayStr=sign+absDollar+' ('+sign+abs+'%)';
+            dayColor=dc.changePct>=0?'var(--emerald)':'var(--rose)';
+          }
+          return '<div><div class="hc-m-lbl">Güncel Fiyat</div><div class="hc-m-val" style="color:'+c+'">'+fmt$(h.currentPrice)+'</div></div>'+
+            '<div><div class="hc-m-lbl">Bugün</div><div class="hc-m-val" style="color:'+dayColor+';font-size:11px">'+dayStr+'</div></div>'+
+            '<div><div class="hc-m-lbl">Portföy %</div><div class="hc-m-val">'+weightPct.toFixed(1)+'%</div></div>';
+        })()+
       '</div>'+
       ccReminder+
       noteStr+
