@@ -688,53 +688,128 @@ document.getElementById('fabBtn').onclick=function(){ openAddTrade(); };
 
 // ─── PORTFOLIO SCREEN ─────────────────
 
-// ─── PRICE FETCHER (Anthropic API + web_search) ────────────────────
+// ─── PRICE FETCHER ────────────────────────────────────────────────
+// Architecture: Frontend → /api/quote (Netlify Function) → Yahoo Finance
+// Deploy kılavuzu için README.md dosyasına bak.
+// PROXY_BASE: deploy sonrası Netlify URL'ini buraya yaz.
+// Geliştirme sırasında: netlify dev çalışıyorsa http://localhost:8888
+// ─────────────────────────────────────────────────────────────────
+
 var _fetchInProgress = false;
-function fetchAllPrices(){
-  if(_fetchInProgress) return;
+var _lastPriceUpdate = null;
+
+// ── Proxy base URL ────────────────────────────────────────────────
+// Deploy sonrası '' bırak (aynı origin). Başka domain ise tam URL yaz.
+// Örn: 'https://benim-portfoy.netlify.app'
+var PROXY_BASE = 'https://voluble-dieffenbachia-243e91.netlify.app';
+
+function setBtnState(btn, html, color, disabled) {
+  if (!btn) return;
+  btn.innerHTML = html;
+  btn.style.color = color || '#10D48E';
+  btn.disabled    = !!disabled;
+  btn.style.opacity = disabled ? '0.65' : '1';
+}
+
+// Fetch a single quote from the proxy
+function fetchQuote(symbol) {
+  var url = PROXY_BASE + '/.netlify/functions/quote?symbol=' + encodeURIComponent(symbol);
+  return fetch(url, { method: 'GET' })
+    .then(function (r) {
+      if (!r.ok) return r.json().then(function (e) { throw new Error(e.error || r.status); });
+      return r.json();
+    });
+}
+
+// Fetch all quotes — tries bulk first, falls back to one-by-one
+function fetchAllQuotes(tickers) {
+  if (tickers.length === 0) return Promise.resolve({});
+
+  // Bulk request: /api/quote?symbol=A,B,C
+  var url = PROXY_BASE + '/.netlify/functions/quote?symbol=' + tickers.map(encodeURIComponent).join(',');
+  return fetch(url)
+    .then(function (r) {
+      if (!r.ok) throw new Error('bulk ' + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      var map = {};
+      // Bulk response: { quotes: [{symbol, price, ...}] }
+      var list = data.quotes || (data.symbol ? [data] : []);
+      list.forEach(function (q) {
+        if (q.symbol && q.price && q.price > 0) {
+          map[q.symbol.toUpperCase()] = q.price;
+        }
+      });
+      // If bulk returned nothing, throw so we fall back
+      if (Object.keys(map).length === 0) throw new Error('bulk returned no prices');
+      return map;
+    })
+    .catch(function (bulkErr) {
+      console.warn('[portfolio] Bulk fetch failed (' + bulkErr.message + '), falling back to sequential');
+      // Sequential fallback: one request per ticker
+      var map = {};
+      var chain = Promise.resolve();
+      tickers.forEach(function (ticker) {
+        chain = chain.then(function () {
+          return fetchQuote(ticker)
+            .then(function (q) {
+              if (q && q.price > 0) map[ticker.toUpperCase()] = q.price;
+            })
+            .catch(function (e) {
+              console.warn('[portfolio] Quote failed for', ticker, ':', e.message);
+              // Keep going — don't crash on a single failure
+            });
+        });
+      });
+      return chain.then(function () { return map; });
+    });
+}
+
+function fetchAllPrices() {
+  if (_fetchInProgress) return;
   var holdings = computeHoldings();
-  if(!holdings.length) return;
-  var tickers = holdings.map(function(h){ return h.ticker; });
+  if (!holdings.length) return;
+  var tickers = holdings.map(function (h) { return h.ticker; });
   var btn = document.getElementById('refreshBtn');
-  if(btn){ btn.innerHTML='⟳ Yükleniyor...'; btn.style.opacity='0.7'; btn.disabled=true; }
+  setBtnState(btn, '⟳ Güncelleniyor...', '#FFB020', true);
   _fetchInProgress = true;
 
-  var prompt = 'Give me the current stock prices for these tickers: ' + tickers.join(', ') + '. Return ONLY a JSON object like {"AAPL": 213.5, "MSFT": 420.1} with no extra text, markdown, or explanation. Use the most recent available price (today or last close).';
+  fetchAllQuotes(tickers)
+    .then(function (map) {
+      var updated = 0;
+      Object.keys(map).forEach(function (t) {
+        var p = parseFloat(map[t]);
+        if (p > 0) { prices[t] = Math.round(p * 100) / 100; updated++; }
+      });
+      _fetchInProgress = false;
+      savePrices();
+      renderPortfolio();
+      if (curScreen === 'dist')    renderDist();
+      if (curScreen === 'metrics') renderMetrics();
+      _lastPriceUpdate = new Date();
 
-  fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: prompt }]
+      if (!btn) return;
+      var total = tickers.length;
+      if (updated === 0) {
+        setBtnState(btn, '✗ Fiyat alınamadı', '#FF4F7B', false);
+        console.error('[portfolio] No prices returned. PROXY_BASE =', PROXY_BASE || '(same origin)', '— Netlify deploy yapıldı mı?');
+      } else if (updated < total) {
+        setBtnState(btn, '⚠ ' + updated + '/' + total + ' Güncellendi', '#FFB020', false);
+      } else {
+        setBtnState(btn, '✓ ' + updated + '/' + total + ' Güncellendi', '#10D48E', false);
+      }
+      setTimeout(function () { setBtnState(btn, 'Fiyat Güncelle', '#10D48E', false); }, 5000);
     })
-  })
-  .then(function(r){ if(!r.ok) throw new Error('API '+r.status); return r.json(); })
-  .then(function(data){
-    var text = '';
-    if(data.content){ data.content.forEach(function(block){ if(block.type==='text') text=block.text; }); }
-    var parsed = null;
-    try { var m=text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/); if(m) parsed=JSON.parse(m[0]); } catch(e){}
-    var updated=0;
-    if(parsed){ Object.keys(parsed).forEach(function(t){ var p=parseFloat(parsed[t]); if(p>0){prices[t]=Math.round(p*100)/100; updated++;} }); }
-    _fetchInProgress=false; savePrices(); renderPortfolio();
-    if(curScreen==='dist') renderDist();
-    if(curScreen==='metrics') renderMetrics();
-    if(btn){
-      btn.disabled=false; btn.style.opacity='1';
-      if(updated>=tickers.length*0.8){btn.innerHTML='✓ '+updated+'/'+tickers.length+' Güncellendi';btn.style.color='#10D48E';}
-      else if(updated>0){btn.innerHTML='⚠ '+updated+'/'+tickers.length;btn.style.color='#FFB020';}
-      else{btn.innerHTML='✗ Başarısız';btn.style.color='#FF4F7B';}
-      setTimeout(function(){ if(btn){btn.innerHTML='Fiyat Güncelle';btn.style.color='#10D48E';} },4000);
-    }
-  })
-  .catch(function(err){
-    _fetchInProgress=false;
-    if(btn){btn.disabled=false;btn.style.opacity='1';btn.innerHTML='✗ Hata';btn.style.color='#FF4F7B';
-      setTimeout(function(){ if(btn){btn.innerHTML='Fiyat Güncelle';btn.style.color='#10D48E';} },3000);}
-  });
+    .catch(function (err) {
+      _fetchInProgress = false;
+      console.error('[portfolio] fetchAllPrices error:', err);
+      if (btn) {
+        setBtnState(btn, '✗ Proxy hatası', '#FF4F7B', false);
+        console.error('[portfolio] Proxy erişilemiyor. PROXY_BASE =', PROXY_BASE || '(same origin)');
+        setTimeout(function () { setBtnState(btn, 'Fiyat Güncelle', '#10D48E', false); }, 5000);
+      }
+    });
 }
 
 function openHolding(ticker){
