@@ -380,6 +380,8 @@ body{
   <div class="bar-right">
     <span class="bar-date" id="todayDate"></span>
     <button id="refreshBtn" onclick="fetchAllPrices()" style="background:rgba(16,212,142,0.12);border:1px solid rgba(16,212,142,0.22);border-radius:8px;padding:5px 12px;color:#10D48E;font-size:11px;font-weight:700;cursor:pointer">Fiyat Guncelle</button>
+    <button onclick="backupData()" id="backupBtn" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:5px 11px;color:#F59E0B;font-size:11px;font-weight:700;cursor:pointer">📦 Yedek</button>
+    <button onclick="restoreData()" style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:5px 11px;color:#818CF8;font-size:11px;font-weight:700;cursor:pointer">📥 Yükle</button>
     <button onclick="resetAll()" style="background:rgba(255,79,123,0.12);border:1px solid rgba(255,79,123,0.22);border-radius:8px;padding:5px 11px;color:#FF4F7B;font-size:11px;font-weight:700;cursor:pointer">Sifirla</button>
   </div>
 </header>
@@ -593,7 +595,13 @@ try { var _dc=localStorage.getItem(LS_DAYCHANGE); if(_dc) dayChange=JSON.parse(_
 var tickerNotes = {};
 try { var _n=localStorage.getItem(LS_NOTES); if(_n) tickerNotes=JSON.parse(_n); } catch(e){}
 
-function saveTx()    { try{localStorage.setItem(LS_TX,    JSON.stringify(txData));}catch(e){} }
+function saveTx()    {
+  try{
+    var j=JSON.stringify(txData);
+    localStorage.setItem(LS_TX, j);
+    localStorage.setItem(LS_TX+'_shadow', j);
+  }catch(e){}
+}
 function saveKur()   { try{localStorage.setItem(LS_KUR,   JSON.stringify(kurData));}catch(e){} }
 function saveTax()   { try{localStorage.setItem(LS_TAX,   JSON.stringify(taxExtra));}catch(e){} }
 function savePrices(){ try{localStorage.setItem(LS_PRICE, JSON.stringify(prices));}catch(e){} }
@@ -1456,6 +1464,110 @@ function saveTrade(){
 }
 
 // ─── RESET ───────────────────────────
+// ═══ YEDEK AL / YÜKLE ═══════════════════════════
+function backupData(){
+  // Tüm veriyi tek JSON'a topla
+  var backup = {
+    _version: 2,
+    _date: new Date().toISOString(),
+    _app: 'PortfoyApp',
+    txData: txData,
+    kurData: kurData,
+    taxExtra: taxExtra,
+    prices: prices,
+    tickerNotes: tickerNotes,
+    dayChange: dayChange
+  };
+  var json = JSON.stringify(backup, null, 2);
+  var blob = new Blob([json], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'portfoy-yedek-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+
+  // Son yedek tarihini kaydet
+  try { localStorage.setItem('portfoy_last_backup', new Date().toISOString()); } catch(e){}
+
+  // Yeşil toast
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#10D48E;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:99999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+  t.textContent = '✅ Yedek indirildi — ' + new Date().toISOString().split('T')[0];
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 3000);
+
+  // Butonu güncelle
+  var btn = document.getElementById('backupBtn');
+  if(btn){ btn.textContent='✅ Yedeklendi'; setTimeout(function(){ btn.textContent='📦 Yedek'; },2500); }
+}
+
+function restoreData(){
+  var m = document.createElement('div');
+  m.className = 'overlay';
+  var sh = document.createElement('div');
+  sh.className = 'sheet';
+
+  var handle = document.createElement('div'); handle.className='sheet-handle';
+  var ttl = document.createElement('div'); ttl.className='sheet-title'; ttl.textContent='📥 Yedek Yükle';
+  var desc = document.createElement('div');
+  desc.style.cssText='font-size:12px;color:var(--ink2);margin-bottom:14px;line-height:1.5';
+  desc.textContent='Daha önce aldığın yedek dosyasını seç. Mevcut veriler yeni veriyle değiştirilecek.';
+
+  // Dosya seçici butonu
+  var fileBtn = document.createElement('button');
+  fileBtn.className = 'btn-buy';
+  fileBtn.textContent = '📂 Yedek Dosyası Seç (.json)';
+
+  var fileInp = document.createElement('input');
+  fileInp.type='file'; fileInp.accept='.json'; fileInp.style.display='none';
+
+  fileBtn.onclick = function(){ fileInp.click(); };
+
+  fileInp.onchange = function(e){
+    var file = e.target.files[0]; if(!file) return;
+    fileBtn.textContent = '📄 ' + file.name;
+    fileBtn.style.background = 'rgba(16,212,142,0.15)';
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try {
+        var d = JSON.parse(ev.target.result);
+        // Format kontrolü
+        if(!d.txData && !d._app){ alert('Geçersiz yedek dosyası.'); return; }
+
+        if(d.txData)     { txData = d.txData; }
+        if(d.kurData)    { kurData = d.kurData; }
+        if(d.taxExtra)   { taxExtra = d.taxExtra; }
+        if(d.prices)     { prices = d.prices; }
+        if(d.tickerNotes){ tickerNotes = d.tickerNotes; }
+        if(d.dayChange)  { dayChange = d.dayChange; }
+
+        saveTx(); saveKur(); saveTax(); savePrices(); saveNotes(); saveDayChange();
+        m.remove();
+        renderPortfolio();
+
+        var t = document.createElement('div');
+        t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#10D48E;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:99999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+        t.textContent = '✅ Yedek yüklendi — ' + (d._date||'').split('T')[0];
+        document.body.appendChild(t);
+        setTimeout(function(){ t.remove(); }, 3000);
+      } catch(err) {
+        alert('Hata: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn-ghost'; cancelBtn.textContent = 'İptal';
+  cancelBtn.onclick = function(){ m.remove(); };
+
+  sh.appendChild(handle); sh.appendChild(ttl); sh.appendChild(desc);
+  sh.appendChild(fileBtn); sh.appendChild(fileInp);
+  sh.appendChild(cancelBtn);
+  m.appendChild(sh);
+  document.body.appendChild(m);
+  m.onclick = function(e){ if(e.target===m) m.remove(); };
+}
+
 function resetAll(){
   var m=document.createElement('div');
   m.className='overlay';
