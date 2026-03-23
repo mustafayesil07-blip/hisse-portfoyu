@@ -4,7 +4,10 @@
  * GET /api/quote?symbol=AAPL,MSFT,TSLA
  *
  * Returns:
- *   Single: { symbol, price, previousClose, change, changePct, currency, updatedAt }
+ *   Single: { symbol, price, previousClose, change, changePct,
+ *             preMarketPrice, preMarketChangePct,
+ *             postMarketPrice, postMarketChangePct,
+ *             marketState, currency, updatedAt }
  *   Bulk:   { quotes: [...] }
  */
 
@@ -35,14 +38,17 @@ function get(url) {
   });
 }
 
-function buildQuote(symbol, price, prevClose, currency, time) {
-  price = price ? Math.round(price * 100) / 100 : null;
-  prevClose = prevClose ? Math.round(prevClose * 100) / 100 : null;
-  const change = (price && prevClose) ? Math.round((price - prevClose) * 100) / 100 : null;
+function round2(v) { return v ? Math.round(v * 100) / 100 : null; }
+function round4(v) { return v ? Math.round(v * 10000) / 100 : null; } // percent
+
+function buildQuote(symbol, price, prevClose, currency, time, extra) {
+  price    = round2(price);
+  prevClose = round2(prevClose);
+  const change    = (price && prevClose) ? round2(price - prevClose) : null;
   const changePct = (price && prevClose && prevClose !== 0)
-    ? Math.round((price - prevClose) / prevClose * 10000) / 100
-    : null;
-  return {
+    ? Math.round((price - prevClose) / prevClose * 10000) / 100 : null;
+
+  const q = {
     symbol: symbol.toUpperCase(),
     price,
     previousClose: prevClose,
@@ -51,11 +57,31 @@ function buildQuote(symbol, price, prevClose, currency, time) {
     currency: currency || 'USD',
     updatedAt: new Date(time ? time * 1000 : Date.now()).toISOString(),
   };
+
+  // Pre/post market
+  if (extra) {
+    if (extra.preMarketPrice) {
+      q.preMarketPrice     = round2(extra.preMarketPrice);
+      q.preMarketChangePct = price
+        ? Math.round((extra.preMarketPrice - price) / price * 10000) / 100
+        : null;
+    }
+    if (extra.postMarketPrice) {
+      q.postMarketPrice     = round2(extra.postMarketPrice);
+      q.postMarketChangePct = price
+        ? Math.round((extra.postMarketPrice - price) / price * 10000) / 100
+        : null;
+    }
+    if (extra.marketState) q.marketState = extra.marketState;
+  }
+
+  return q;
 }
 
 async function fetchV8(symbol) {
+  // includePrePost=true — getirir: preMarketPrice, postMarketPrice, marketState
   const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' +
-    encodeURIComponent(symbol) + '?range=2d&interval=1d&includePrePost=false';
+    encodeURIComponent(symbol) + '?range=2d&interval=1d&includePrePost=true';
   const data = await get(url);
   const meta = data?.chart?.result?.[0]?.meta;
   if (!meta) throw new Error('No result for ' + symbol);
@@ -66,14 +92,33 @@ async function fetchV8(symbol) {
     price,
     meta.previousClose || meta.chartPreviousClose,
     meta.currency,
-    meta.regularMarketTime
+    meta.regularMarketTime,
+    {
+      preMarketPrice:  meta.preMarketPrice  || null,
+      postMarketPrice: meta.postMarketPrice || null,
+      marketState:     meta.marketState     || null,
+    }
   );
 }
 
 async function fetchV7Bulk(symbols) {
+  const fields = [
+    'symbol',
+    'regularMarketPrice',
+    'previousClose',
+    'regularMarketChange',
+    'regularMarketChangePercent',
+    'currency',
+    'regularMarketTime',
+    'preMarketPrice',
+    'preMarketChangePercent',
+    'postMarketPrice',
+    'postMarketChangePercent',
+    'marketState',
+  ].join(',');
+
   const url = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' +
-    symbols.map(encodeURIComponent).join(',') +
-    '&fields=symbol,regularMarketPrice,previousClose,regularMarketChange,regularMarketChangePercent,currency,regularMarketTime';
+    symbols.map(encodeURIComponent).join(',') + '&fields=' + fields;
   const data = await get(url);
   const results = data?.quoteResponse?.result;
   if (!results || results.length === 0) throw new Error('No v7 results');
@@ -83,7 +128,12 @@ async function fetchV7Bulk(symbols) {
       q.regularMarketPrice || q.previousClose,
       q.previousClose,
       q.currency,
-      q.regularMarketTime
+      q.regularMarketTime,
+      {
+        preMarketPrice:  q.preMarketPrice  || null,
+        postMarketPrice: q.postMarketPrice || null,
+        marketState:     q.marketState     || null,
+      }
     );
   });
 }
@@ -96,7 +146,7 @@ const CORS = {
   'Cache-Control': 'public, max-age=60',
 };
 
-function ok(body) { return { statusCode: 200, headers: CORS, body: JSON.stringify(body) }; }
+function ok(body)       { return { statusCode: 200, headers: CORS, body: JSON.stringify(body) }; }
 function err(code, msg) { return { statusCode: code, headers: CORS, body: JSON.stringify({ error: msg }) }; }
 
 exports.handler = async function(event) {
@@ -129,14 +179,20 @@ exports.handler = async function(event) {
       const missing = symbols.filter(s => !quotes.find(q => q.symbol === s && q.price));
       for (const s of missing) {
         try { quotes.push(await fetchV8(s)); }
-        catch(e) { quotes.push({ symbol: s, price: null, previousClose: null, change: null, changePct: null, currency: 'USD', updatedAt: new Date().toISOString(), error: e.message }); }
+        catch(e) {
+          quotes.push({ symbol: s, price: null, previousClose: null, change: null,
+            changePct: null, currency: 'USD', updatedAt: new Date().toISOString(), error: e.message });
+        }
       }
       return ok({ quotes });
     } catch(bulkErr) {
       console.warn('v7 bulk failed:', bulkErr.message);
       const results = await Promise.all(symbols.map(async s => {
         try { return await fetchV8(s); }
-        catch(e) { return { symbol: s, price: null, previousClose: null, change: null, changePct: null, currency: 'USD', updatedAt: new Date().toISOString(), error: e.message }; }
+        catch(e) {
+          return { symbol: s, price: null, previousClose: null, change: null,
+            changePct: null, currency: 'USD', updatedAt: new Date().toISOString(), error: e.message };
+        }
       }));
       return ok({ quotes: results });
     }
