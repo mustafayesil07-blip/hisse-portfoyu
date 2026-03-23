@@ -637,6 +637,21 @@ function tickerColor(t){
 function fmt$(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(v);}
 function fmtTRY(v){return v.toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:0})+' ₺';}
 function fmtPct(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}
+function getEffectivePriceForTicker(ticker, fallback){
+  var regular = prices[ticker];
+  var dc = dayChange[ticker];
+  if(dc){
+    var state = dc.marketState || 'CLOSED';
+    if(state === 'PRE' && dc.preMarketPrice != null && Number(dc.preMarketPrice) > 0){
+      return Number(dc.preMarketPrice);
+    }
+    if((state === 'POST' || state === 'CLOSED') && dc.postMarketPrice != null && Number(dc.postMarketPrice) > 0){
+      return Number(dc.postMarketPrice);
+    }
+  }
+  if(regular != null && Number(regular) > 0) return Number(regular);
+  return fallback;
+}
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function getKur(date){
   if(!date) return null;
@@ -676,7 +691,7 @@ function computeHoldings(){
       var totalSellQty=sells.reduce(function(s,s2){return s+s2.qty;},0);
       // Weighted avg of remaining
       h.avgCost=totalBuyQty>0?totalBuyCost/totalBuyQty:0;
-      h.currentPrice=prices[t]||h.avgCost;
+      h.currentPrice=getEffectivePriceForTicker(t,h.avgCost);
       h.marketValue=h.qty*h.currentPrice;
       h.costBasis=h.qty*h.avgCost;
       h.unrealizedPnl=h.marketValue-h.costBasis;
