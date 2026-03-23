@@ -731,7 +731,7 @@ function setBtnState(btn, html, color, disabled) {
 
 // Fetch a single quote from the proxy
 function fetchQuote(symbol) {
-  var url = PROXY_BASE + '/.netlify/functions/quote?symbol=' + encodeURIComponent(symbol);
+  var url = PROXY_BASE + '/api/quote?symbol=' + encodeURIComponent(symbol);
   return fetch(url, { method: 'GET' })
     .then(function(r) {
       if (!r.ok) return r.json().then(function(e){ throw new Error(e.error || r.status); });
@@ -741,7 +741,7 @@ function fetchQuote(symbol) {
 
 function fetchAllQuotes(tickers) {
   if (tickers.length === 0) return Promise.resolve({});
-  var url = PROXY_BASE + '/.netlify/functions/quote?symbol=' + tickers.map(encodeURIComponent).join(',');
+  var url = PROXY_BASE + '/api/quote?symbol=' + tickers.map(encodeURIComponent).join(',');
   return fetch(url)
     .then(function(r) {
       if (!r.ok) throw new Error('bulk ' + r.status);
