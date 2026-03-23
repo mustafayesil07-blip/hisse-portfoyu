@@ -380,8 +380,6 @@ body{
   <div class="bar-right">
     <span class="bar-date" id="todayDate"></span>
     <button id="refreshBtn" onclick="fetchAllPrices()" style="background:rgba(16,212,142,0.12);border:1px solid rgba(16,212,142,0.22);border-radius:8px;padding:5px 12px;color:#10D48E;font-size:11px;font-weight:700;cursor:pointer">Fiyat Guncelle</button>
-    <button onclick="backupData()" id="backupBtn" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:5px 11px;color:#F59E0B;font-size:11px;font-weight:700;cursor:pointer">📦 Yedek</button>
-    <button onclick="restoreData()" style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:5px 11px;color:#818CF8;font-size:11px;font-weight:700;cursor:pointer">📥 Yükle</button>
     <button onclick="resetAll()" style="background:rgba(255,79,123,0.12);border:1px solid rgba(255,79,123,0.22);border-radius:8px;padding:5px 11px;color:#FF4F7B;font-size:11px;font-weight:700;cursor:pointer">Sifirla</button>
   </div>
 </header>
@@ -595,13 +593,7 @@ try { var _dc=localStorage.getItem(LS_DAYCHANGE); if(_dc) dayChange=JSON.parse(_
 var tickerNotes = {};
 try { var _n=localStorage.getItem(LS_NOTES); if(_n) tickerNotes=JSON.parse(_n); } catch(e){}
 
-function saveTx()    {
-  try{
-    var j=JSON.stringify(txData);
-    localStorage.setItem(LS_TX, j);
-    localStorage.setItem(LS_TX+'_shadow', j);
-  }catch(e){}
-}
+function saveTx()    { try{localStorage.setItem(LS_TX,    JSON.stringify(txData));}catch(e){} }
 function saveKur()   { try{localStorage.setItem(LS_KUR,   JSON.stringify(kurData));}catch(e){} }
 function saveTax()   { try{localStorage.setItem(LS_TAX,   JSON.stringify(taxExtra));}catch(e){} }
 function savePrices(){ try{localStorage.setItem(LS_PRICE, JSON.stringify(prices));}catch(e){} }
@@ -804,11 +796,18 @@ function fetchAllPrices() {
         var p = typeof q === 'object' ? q.price : parseFloat(q);
         if (p && p > 0) {
           prices[t] = Math.round(p * 100) / 100;
-          if (typeof q === 'object' && q.changePct != null) {
+          if (typeof q === 'object') {
             dayChange[t] = {
-              change:        q.change,
-              changePct:     q.changePct,
-              previousClose: q.previousClose
+              change:             q.change,
+              changePct:          q.changePct,
+              previousClose:      q.previousClose,
+              preMarketPrice:     q.preMarketPrice     || null,
+              preMarketChange:    q.preMarketChange     || null,
+              preMarketChangePct: q.preMarketChangePct  || null,
+              postMarketPrice:    q.postMarketPrice     || null,
+              postMarketChange:   q.postMarketChange    || null,
+              postMarketChangePct:q.postMarketChangePct || null,
+              marketState:        q.marketState         || 'CLOSED',
             };
           }
           updated++;
@@ -1076,7 +1075,13 @@ function renderPortfolio(){
       var dc$=fmt$(Math.abs(totalDayChangeDollar));
       var dcSign=totalDayChangeDollar>=0?'+':'-';
       var dcColor=totalDayChangeDollar>=0?'var(--emerald)':'var(--rose)';
-      hs.innerHTML='Unrealized P&L &nbsp;|&nbsp; Bugün: <span style="color:'+dcColor+';font-weight:700">'+dcSign+dc$+' ('+dcSign+Math.abs(totalDayChangePct).toFixed(2)+'%)</span>';
+      // Check if any extended hours are active
+      var anyPre  = holdings.some(function(h){ var dc=dayChange[h.ticker]; return dc && dc.marketState==='PRE'  && dc.preMarketPrice; });
+      var anyPost = holdings.some(function(h){ var dc=dayChange[h.ticker]; return dc && (dc.marketState==='POST'||dc.marketState==='CLOSED') && dc.postMarketPrice; });
+      var mktBadge = '';
+      if(anyPre)  mktBadge = ' &nbsp;<span style="font-size:10px;background:rgba(255,176,32,.15);color:var(--amber);padding:1px 6px;border-radius:5px;font-weight:700">PRE MKT</span>';
+      if(anyPost) mktBadge = ' &nbsp;<span style="font-size:10px;background:rgba(56,189,248,.12);color:var(--sky);padding:1px 6px;border-radius:5px;font-weight:700">POST MKT</span>';
+      hs.innerHTML='Unrealized P&L &nbsp;|&nbsp; Bugün: <span style="color:'+dcColor+';font-weight:700">'+dcSign+dc$+' ('+dcSign+Math.abs(totalDayChangePct).toFixed(2)+'%)</span>'+mktBadge;
     } else {
       hs.textContent='Unrealized P&L';
     }
@@ -1128,18 +1133,42 @@ function renderPortfolio(){
       '</div>'+
       '<div class="hc-grid">'+
         (function(){
-          var dc=dayChange[h.ticker];
-          var dayStr='—'; var dayColor='var(--ink2)';
-          if(dc && dc.changePct!=null){
-            var sign=dc.changePct>=0?'+':'-';
-            var abs=Math.abs(dc.changePct).toFixed(2);
-            var absDollar=fmt$(Math.abs(dc.change||0));
-            dayStr=sign+absDollar+' ('+sign+abs+'%)';
-            dayColor=dc.changePct>=0?'var(--emerald)':'var(--rose)';
+          var dc = dayChange[h.ticker];
+          // Regular day change
+          var dayStr = '—'; var dayColor = 'var(--ink2)';
+          if (dc && dc.changePct != null) {
+            var sign = dc.changePct >= 0 ? '+' : '-';
+            dayStr = sign + fmt$(Math.abs(dc.change||0)) + ' (' + sign + Math.abs(dc.changePct).toFixed(2) + '%)';
+            dayColor = dc.changePct >= 0 ? 'var(--emerald)' : 'var(--rose)';
           }
-          return '<div><div class="hc-m-lbl">Güncel Fiyat</div><div class="hc-m-val" style="color:'+c+'">'+fmt$(h.currentPrice)+'</div></div>'+
-            '<div><div class="hc-m-lbl">Bugün</div><div class="hc-m-val" style="color:'+dayColor+';font-size:11px">'+dayStr+'</div></div>'+
-            '<div><div class="hc-m-lbl">Portföy %</div><div class="hc-m-val">'+weightPct.toFixed(1)+'%</div></div>';
+          // Extended hours
+          var extHtml = '';
+          if (dc) {
+            var ms = dc.marketState || 'CLOSED';
+            if (ms === 'PRE' && dc.preMarketPrice) {
+              var ep = dc.preMarketPrice; var ec = dc.preMarketChangePct || 0;
+              var esign = ec >= 0 ? '+' : '-';
+              var ecol = ec >= 0 ? 'var(--emerald)' : 'var(--rose)';
+              extHtml = '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:rgba(255,176,32,.10);border:1px solid rgba(255,176,32,.2);border-radius:6px;padding:2px 6px">'
+                + '<span style="font-size:9px;font-weight:700;color:var(--amber)">PRE</span>'
+                + '<span style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;color:'+ecol+'">$'+ep.toFixed(2)+' '+esign+Math.abs(ec).toFixed(2)+'%</span>'
+                + '</div>';
+            } else if ((ms === 'POST' || ms === 'CLOSED') && dc.postMarketPrice) {
+              var ep = dc.postMarketPrice; var ec = dc.postMarketChangePct || 0;
+              var esign = ec >= 0 ? '+' : '-';
+              var ecol = ec >= 0 ? 'var(--emerald)' : 'var(--rose)';
+              extHtml = '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:6px;padding:2px 6px">'
+                + '<span style="font-size:9px;font-weight:700;color:var(--sky)">POST</span>'
+                + '<span style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;color:'+ecol+'">$'+ep.toFixed(2)+' '+esign+Math.abs(ec).toFixed(2)+'%</span>'
+                + '</div>';
+            }
+          }
+          return '<div><div class="hc-m-lbl">Güncel Fiyat</div>'
+            + '<div class="hc-m-val" style="color:'+c+'">'+fmt$(h.currentPrice)+'</div>'
+            + extHtml
+            + '</div>'
+            + '<div><div class="hc-m-lbl">Bugün</div><div class="hc-m-val" style="color:'+dayColor+';font-size:11px">'+dayStr+'</div></div>'
+            + '<div><div class="hc-m-lbl">Portföy %</div><div class="hc-m-val">'+weightPct.toFixed(1)+'%</div></div>';
         })()+
       '</div>'+
       ccReminder+
@@ -1464,110 +1493,6 @@ function saveTrade(){
 }
 
 // ─── RESET ───────────────────────────
-// ═══ YEDEK AL / YÜKLE ═══════════════════════════
-function backupData(){
-  // Tüm veriyi tek JSON'a topla
-  var backup = {
-    _version: 2,
-    _date: new Date().toISOString(),
-    _app: 'PortfoyApp',
-    txData: txData,
-    kurData: kurData,
-    taxExtra: taxExtra,
-    prices: prices,
-    tickerNotes: tickerNotes,
-    dayChange: dayChange
-  };
-  var json = JSON.stringify(backup, null, 2);
-  var blob = new Blob([json], {type:'application/json'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'portfoy-yedek-' + new Date().toISOString().split('T')[0] + '.json';
-  a.click();
-
-  // Son yedek tarihini kaydet
-  try { localStorage.setItem('portfoy_last_backup', new Date().toISOString()); } catch(e){}
-
-  // Yeşil toast
-  var t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#10D48E;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:99999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3)';
-  t.textContent = '✅ Yedek indirildi — ' + new Date().toISOString().split('T')[0];
-  document.body.appendChild(t);
-  setTimeout(function(){ t.remove(); }, 3000);
-
-  // Butonu güncelle
-  var btn = document.getElementById('backupBtn');
-  if(btn){ btn.textContent='✅ Yedeklendi'; setTimeout(function(){ btn.textContent='📦 Yedek'; },2500); }
-}
-
-function restoreData(){
-  var m = document.createElement('div');
-  m.className = 'overlay';
-  var sh = document.createElement('div');
-  sh.className = 'sheet';
-
-  var handle = document.createElement('div'); handle.className='sheet-handle';
-  var ttl = document.createElement('div'); ttl.className='sheet-title'; ttl.textContent='📥 Yedek Yükle';
-  var desc = document.createElement('div');
-  desc.style.cssText='font-size:12px;color:var(--ink2);margin-bottom:14px;line-height:1.5';
-  desc.textContent='Daha önce aldığın yedek dosyasını seç. Mevcut veriler yeni veriyle değiştirilecek.';
-
-  // Dosya seçici butonu
-  var fileBtn = document.createElement('button');
-  fileBtn.className = 'btn-buy';
-  fileBtn.textContent = '📂 Yedek Dosyası Seç (.json)';
-
-  var fileInp = document.createElement('input');
-  fileInp.type='file'; fileInp.accept='.json'; fileInp.style.display='none';
-
-  fileBtn.onclick = function(){ fileInp.click(); };
-
-  fileInp.onchange = function(e){
-    var file = e.target.files[0]; if(!file) return;
-    fileBtn.textContent = '📄 ' + file.name;
-    fileBtn.style.background = 'rgba(16,212,142,0.15)';
-    var reader = new FileReader();
-    reader.onload = function(ev){
-      try {
-        var d = JSON.parse(ev.target.result);
-        // Format kontrolü
-        if(!d.txData && !d._app){ alert('Geçersiz yedek dosyası.'); return; }
-
-        if(d.txData)     { txData = d.txData; }
-        if(d.kurData)    { kurData = d.kurData; }
-        if(d.taxExtra)   { taxExtra = d.taxExtra; }
-        if(d.prices)     { prices = d.prices; }
-        if(d.tickerNotes){ tickerNotes = d.tickerNotes; }
-        if(d.dayChange)  { dayChange = d.dayChange; }
-
-        saveTx(); saveKur(); saveTax(); savePrices(); saveNotes(); saveDayChange();
-        m.remove();
-        renderPortfolio();
-
-        var t = document.createElement('div');
-        t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#10D48E;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:99999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3)';
-        t.textContent = '✅ Yedek yüklendi — ' + (d._date||'').split('T')[0];
-        document.body.appendChild(t);
-        setTimeout(function(){ t.remove(); }, 3000);
-      } catch(err) {
-        alert('Hata: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  var cancelBtn = document.createElement('button');
-  cancelBtn.className = 'btn-ghost'; cancelBtn.textContent = 'İptal';
-  cancelBtn.onclick = function(){ m.remove(); };
-
-  sh.appendChild(handle); sh.appendChild(ttl); sh.appendChild(desc);
-  sh.appendChild(fileBtn); sh.appendChild(fileInp);
-  sh.appendChild(cancelBtn);
-  m.appendChild(sh);
-  document.body.appendChild(m);
-  m.onclick = function(e){ if(e.target===m) m.remove(); };
-}
-
 function resetAll(){
   var m=document.createElement('div');
   m.className='overlay';
