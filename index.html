@@ -1091,8 +1091,8 @@ function renderPortfolio(){
       var dcSign=totalDayChangeDollar>=0?'+':'-';
       var dcColor=totalDayChangeDollar>=0?'var(--emerald)':'var(--rose)';
       // Check if any extended hours are active
-      var anyPre  = holdings.some(function(h){ var dc=dayChange[h.ticker]; return dc && dc.marketState==='PRE'  && dc.preMarketPrice; });
-      var anyPost = holdings.some(function(h){ var dc=dayChange[h.ticker]; return dc && (dc.marketState==='POST'||dc.marketState==='CLOSED') && dc.postMarketPrice; });
+      var anyPre  = holdings.some(function(h){ var dc=dayChange[h.ticker]; return dc && dc.preMarketPrice  > 0 && (dc.marketState==='PRE'  || dc.marketState==='PREPRE'); });
+      var anyPost = holdings.some(function(h){ var dc=dayChange[h.ticker]; return dc && dc.postMarketPrice > 0 && (dc.marketState==='POST' || dc.marketState==='POSTPOST' || dc.marketState==='CLOSED'); });
       var mktBadge = '';
       if(anyPre)  mktBadge = ' &nbsp;<span style="font-size:10px;background:rgba(255,176,32,.15);color:var(--amber);padding:1px 6px;border-radius:5px;font-weight:700">PRE MKT</span>';
       if(anyPost) mktBadge = ' &nbsp;<span style="font-size:10px;background:rgba(56,189,248,.12);color:var(--sky);padding:1px 6px;border-radius:5px;font-weight:700">POST MKT</span>';
@@ -1160,21 +1160,26 @@ function renderPortfolio(){
           var extHtml = '';
           if (dc) {
             var ms = dc.marketState || 'CLOSED';
-            if (ms === 'PRE' && dc.preMarketPrice) {
+            // Show pre-market: marketState=PRE veya preMarketPrice varsa
+            var showPre  = dc.preMarketPrice  && dc.preMarketPrice  > 0 && (ms === 'PRE'  || ms === 'PREPRE');
+            // Show post-market: marketState=POST/CLOSED veya postMarketPrice varsa
+            var showPost = dc.postMarketPrice && dc.postMarketPrice > 0 && (ms === 'POST' || ms === 'POSTPOST' || ms === 'CLOSED');
+            // Prefer pre over post if both exist (shouldn't happen but just in case)
+            if (showPre) {
               var ep = dc.preMarketPrice; var ec = dc.preMarketChangePct || 0;
-              var esign = ec >= 0 ? '+' : '-';
+              var esign = ec >= 0 ? '+' : '';
               var ecol = ec >= 0 ? 'var(--emerald)' : 'var(--rose)';
               extHtml = '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:rgba(255,176,32,.10);border:1px solid rgba(255,176,32,.2);border-radius:6px;padding:2px 6px">'
                 + '<span style="font-size:9px;font-weight:700;color:var(--amber)">PRE</span>'
-                + '<span style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;color:'+ecol+'">$'+ep.toFixed(2)+' '+esign+Math.abs(ec).toFixed(2)+'%</span>'
+                + '<span style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;color:'+ecol+'">$'+ep.toFixed(2)+' ('+esign+ec.toFixed(2)+'%)</span>'
                 + '</div>';
-            } else if ((ms === 'POST' || ms === 'CLOSED') && dc.postMarketPrice) {
+            } else if (showPost) {
               var ep = dc.postMarketPrice; var ec = dc.postMarketChangePct || 0;
-              var esign = ec >= 0 ? '+' : '-';
+              var esign = ec >= 0 ? '+' : '';
               var ecol = ec >= 0 ? 'var(--emerald)' : 'var(--rose)';
               extHtml = '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:6px;padding:2px 6px">'
                 + '<span style="font-size:9px;font-weight:700;color:var(--sky)">POST</span>'
-                + '<span style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;color:'+ecol+'">$'+ep.toFixed(2)+' '+esign+Math.abs(ec).toFixed(2)+'%</span>'
+                + '<span style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;color:'+ecol+'">$'+ep.toFixed(2)+' ('+esign+ec.toFixed(2)+'%)</span>'
                 + '</div>';
             }
           }
