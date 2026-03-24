@@ -1,103 +1,152 @@
+/**
+ * Vercel Serverless Function: /api/quote
+ * Pre/post market dahil tam fiyat verisi
+ * Yahoo Finance cookie+crumb authentication ile
+ */
+
 const https = require('https');
 
-function get(url) {
-  return new Promise(function(resolve, reject) {
+// ── Cookie/Crumb cache (Vercel fonksiyonu warm olduğu sürece yaşar) ──
+let _cookie = null;
+let _crumb  = null;
+let _cookieTime = 0;
+const CACHE_TTL = 8 * 60 * 1000; // 8 dakika
+
+function httpsGet(url, headers) {
+  return new Promise((resolve, reject) => {
     const req = https.get(url, {
-      headers: {
+      headers: Object.assign({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
+        'Accept': '*/*',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Origin': 'https://finance.yahoo.com',
-        'Referer': 'https://finance.yahoo.com/',
-      },
+      }, headers || {}),
       timeout: 10000,
-    }, function(res) {
+    }, (res) => {
       const chunks = [];
-      res.on('data', function(c) { chunks.push(c); });
-      res.on('end', function() {
-        const body = Buffer.concat(chunks).toString('utf8');
-        if (res.statusCode >= 400) return reject(new Error('HTTP ' + res.statusCode));
-        try { resolve(JSON.parse(body)); } catch(e) { reject(new Error('JSON parse error')); }
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        resolve({
+          status: res.statusCode,
+          headers: res.headers,
+          body: Buffer.concat(chunks).toString('utf8'),
+        });
       });
     });
     req.on('error', reject);
-    req.on('timeout', function() { req.destroy(); reject(new Error('Timeout')); });
+    req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
   });
 }
 
-function r2(n) {
-  return (n != null && !isNaN(n)) ? Math.round(n * 100) / 100 : null;
+async function getCookieAndCrumb() {
+  const now = Date.now();
+  if (_cookie && _crumb && (now - _cookieTime) < CACHE_TTL) {
+    return { cookie: _cookie, crumb: _crumb };
+  }
+
+  // Step 1: Get consent cookie from Yahoo
+  const r1 = await httpsGet('https://fc.yahoo.com', {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  });
+  
+  // Extract set-cookie header
+  const setCookie = r1.headers['set-cookie'];
+  let cookie = '';
+  if (setCookie) {
+    const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
+    cookie = cookies
+      .map(c => c.split(';')[0])
+      .filter(c => c.includes('='))
+      .join('; ');
+  }
+
+  // If fc.yahoo.com didn't give us a cookie, try the consent page
+  if (!cookie) {
+    const r2 = await httpsGet('https://consent.yahoo.com/v2/collectConsent?sessionId=1', {
+      'Accept': 'text/html',
+    });
+    const sc2 = r2.headers['set-cookie'];
+    if (sc2) {
+      const cookies = Array.isArray(sc2) ? sc2 : [sc2];
+      cookie = cookies.map(c => c.split(';')[0]).filter(c => c.includes('=')).join('; ');
+    }
+  }
+
+  // Step 2: Get crumb
+  const r3 = await httpsGet('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+    'Cookie': cookie,
+    'Accept': 'text/plain',
+    'Origin': 'https://finance.yahoo.com',
+    'Referer': 'https://finance.yahoo.com/',
+  });
+
+  const crumb = r3.body.trim().replace(/"/g, '');
+  
+  if (crumb && crumb.length > 3 && !crumb.includes('<')) {
+    _cookie = cookie;
+    _crumb  = crumb;
+    _cookieTime = now;
+    console.log('Yahoo crumb obtained:', crumb.slice(0,8) + '...');
+  } else {
+    console.warn('Could not get crumb, body:', r3.body.slice(0,100));
+    // Continue without crumb - some data will still work
+    _cookie = cookie;
+    _crumb  = '';
+    _cookieTime = now;
+  }
+
+  return { cookie: _cookie, crumb: _crumb };
 }
 
-function pct(price, prev) {
+function r2(n) {
+  return (n != null && n !== undefined && !isNaN(Number(n))) ? Math.round(Number(n) * 100) / 100 : null;
+}
+function calcPct(price, prev) {
   if (!price || !prev || prev === 0) return null;
   return Math.round((price - prev) / prev * 10000) / 100;
 }
 
-// v8 chart API — most reliable, includes pre/post via meta fields
-async function fetchV8Single(symbol) {
-  const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' +
-    encodeURIComponent(symbol) +
-    '?range=1d&interval=1m&includePrePost=true&includeTimestamps=false';
+async function fetchQuotes(symbols) {
+  const { cookie, crumb } = await getCookieAndCrumb();
 
-  const data = await get(url);
-  const result = data?.chart?.result?.[0];
-  if (!result) throw new Error('No result for ' + symbol);
-
-  const meta = result.meta;
-  if (!meta) throw new Error('No meta for ' + symbol);
-
-  const price       = r2(meta.regularMarketPrice);
-  const prev        = r2(meta.previousClose || meta.chartPreviousClose);
-  const prePrice    = r2(meta.preMarketPrice);
-  const postPrice   = r2(meta.postMarketPrice);
-  const marketState = meta.marketState || 'CLOSED'; // PRE | REGULAR | POST | CLOSED | PREPRE | POSTPOST
-
-  return {
-    symbol:   (meta.symbol || symbol).toUpperCase(),
-    price,
-    previousClose: prev,
-    change:    r2(meta.regularMarketChange)        || r2(price - prev),
-    changePct: r2(meta.regularMarketChangePercent) || pct(price, prev),
-
-    preMarketPrice:      prePrice,
-    preMarketChange:     prePrice  != null ? r2(prePrice  - price) : null,
-    preMarketChangePct:  prePrice  != null ? pct(prePrice,  price) : null,
-
-    postMarketPrice:     postPrice,
-    postMarketChange:    postPrice != null ? r2(postPrice - price) : null,
-    postMarketChangePct: postPrice != null ? pct(postPrice, price) : null,
-
-    marketState,
-    currency:  meta.currency || 'USD',
-    updatedAt: new Date(meta.regularMarketTime
-      ? meta.regularMarketTime * 1000
-      : Date.now()
-    ).toISOString(),
-  };
-}
-
-// v7 bulk — faster for many tickers, also has pre/post fields
-async function fetchV7Bulk(symbols) {
+  // Build URL - use v10 quoteSummary for richest data
+  // Actually v7/finance/quote with crumb is most reliable for bulk
   const fields = [
-    'symbol','regularMarketPrice','regularMarketPreviousClose',
-    'regularMarketChange','regularMarketChangePercent','previousClose',
-    'preMarketPrice','preMarketChange','preMarketChangePercent',
-    'postMarketPrice','postMarketChange','postMarketChangePercent',
-    'marketState','currency','regularMarketTime'
+    'symbol', 'shortName',
+    'regularMarketPrice', 'regularMarketPreviousClose',
+    'regularMarketChange', 'regularMarketChangePercent',
+    'regularMarketTime',
+    'preMarketPrice', 'preMarketChange', 'preMarketChangePercent', 'preMarketTime',
+    'postMarketPrice', 'postMarketChange', 'postMarketChangePercent', 'postMarketTime',
+    'marketState', 'currency', 'exchangeTimezoneName',
   ].join(',');
 
-  const url = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' +
-    symbols.map(encodeURIComponent).join(',') + '&fields=' + fields;
+  const crumbParam = crumb ? `&crumb=${encodeURIComponent(crumb)}` : '';
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.map(encodeURIComponent).join(',')}&fields=${fields}${crumbParam}`;
 
-  const data = await get(url);
+  const res = await httpsGet(url, {
+    'Cookie': cookie,
+    'Accept': 'application/json',
+    'Origin': 'https://finance.yahoo.com',
+    'Referer': 'https://finance.yahoo.com/',
+  });
+
+  if (res.status === 401) {
+    // Cookie expired, reset and retry once
+    _cookie = null; _crumb = null; _cookieTime = 0;
+    return fetchQuotes(symbols);
+  }
+  if (res.status >= 400) throw new Error('Yahoo HTTP ' + res.status);
+
+  let data;
+  try { data = JSON.parse(res.body); } catch(e) { throw new Error('JSON parse: ' + res.body.slice(0,100)); }
+
   const results = data?.quoteResponse?.result;
-  if (!results || results.length === 0) throw new Error('No v7 results');
+  if (!results || results.length === 0) throw new Error('No results from Yahoo');
 
-  return results.map(function(q) {
-    const price     = r2(q.regularMarketPrice);
-    const prev      = r2(q.regularMarketPreviousClose || q.previousClose);
-    const prePrice  = r2(q.preMarketPrice);
+  return results.map(q => {
+    const price    = r2(q.regularMarketPrice);
+    const prev     = r2(q.regularMarketPreviousClose);
+    const prePrice = r2(q.preMarketPrice);
     const postPrice = r2(q.postMarketPrice);
     const ms = q.marketState || 'CLOSED';
 
@@ -105,30 +154,32 @@ async function fetchV7Bulk(symbols) {
       symbol:   q.symbol,
       price,
       previousClose: prev,
-      change:    r2(q.regularMarketChange)        || r2(price - prev),
-      changePct: r2(q.regularMarketChangePercent) || pct(price, prev),
+      change:    r2(q.regularMarketChange)        ?? r2(price != null && prev != null ? price - prev : null),
+      changePct: r2(q.regularMarketChangePercent) ?? calcPct(price, prev),
 
       preMarketPrice:      prePrice,
-      preMarketChange:     prePrice  != null ? r2(q.preMarketChange || prePrice - price) : null,
-      preMarketChangePct:  prePrice  != null ? r2(q.preMarketChangePercent || pct(prePrice, price)) : null,
+      preMarketChange:     r2(q.preMarketChange)        ?? (prePrice != null && price != null ? r2(prePrice - price) : null),
+      preMarketChangePct:  r2(q.preMarketChangePercent) ?? calcPct(prePrice, price),
+      preMarketTime:       q.preMarketTime || null,
 
       postMarketPrice:     postPrice,
-      postMarketChange:    postPrice != null ? r2(q.postMarketChange || postPrice - price) : null,
-      postMarketChangePct: postPrice != null ? r2(q.postMarketChangePercent || pct(postPrice, price)) : null,
+      postMarketChange:    r2(q.postMarketChange)        ?? (postPrice != null && price != null ? r2(postPrice - price) : null),
+      postMarketChangePct: r2(q.postMarketChangePercent) ?? calcPct(postPrice, price),
+      postMarketTime:      q.postMarketTime || null,
 
       marketState: ms,
       currency:   q.currency || 'USD',
       updatedAt:  new Date(q.regularMarketTime ? q.regularMarketTime * 1000 : Date.now()).toISOString(),
-      _needsExtended: (ms === 'PRE' || ms === 'POST' || ms === 'PREPRE' || ms === 'POSTPOST') && prePrice == null && postPrice == null,
     };
   });
 }
 
+// ── Vercel handler ─────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'public, max-age=30');
+  res.setHeader('Cache-Control', 'public, max-age=20');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -138,72 +189,16 @@ module.exports = async function handler(req, res) {
 
   const symbols = rawSymbol.split(',').map(s => s.trim()).filter(Boolean);
   if (symbols.length > 20) return res.status(400).json({ error: 'Max 20 symbols' });
-
   for (const s of symbols) {
-    if (!/^[A-Z0-9.\-^]{1,12}$/.test(s)) {
-      return res.status(400).json({ error: 'Invalid symbol: ' + s });
-    }
+    if (!/^[A-Z0-9.\-^]{1,12}$/.test(s)) return res.status(400).json({ error: 'Invalid symbol: ' + s });
   }
 
   try {
-    // Single symbol → v8 directly
-    if (symbols.length === 1) {
-      const q = await fetchV8Single(symbols[0]);
-      return res.status(200).json(q);
-    }
-
-    // Multiple symbols → v7 bulk, then v8 retry if needed
-    try {
-      const quotes = await fetchV7Bulk(symbols);
-
-      const retries = quotes
-        .filter(q => q._needsExtended)
-        .map(async function(q) {
-          try {
-            const fresh = await fetchV8Single(q.symbol);
-            q.preMarketPrice      = fresh.preMarketPrice;
-            q.preMarketChange     = fresh.preMarketChange;
-            q.preMarketChangePct  = fresh.preMarketChangePct;
-            q.postMarketPrice     = fresh.postMarketPrice;
-            q.postMarketChange    = fresh.postMarketChange;
-            q.postMarketChangePct = fresh.postMarketChangePct;
-            q.marketState         = fresh.marketState;
-          } catch (e) {
-            console.warn('v8 retry failed for', q.symbol, e.message);
-          }
-          delete q._needsExtended;
-        });
-
-      await Promise.all(retries);
-      quotes.forEach(q => delete q._needsExtended);
-
-      const got = new Set(quotes.map(q => q.symbol));
-      const missing = symbols.filter(s => !got.has(s));
-
-      for (const s of missing) {
-        try {
-          quotes.push(await fetchV8Single(s));
-        } catch (e) {
-          quotes.push({ symbol: s, price: null, error: e.message });
-        }
-      }
-
-      return res.status(200).json({ quotes });
-    } catch (v7Err) {
-      console.warn('v7 bulk failed:', v7Err.message, '— parallel v8 fallback');
-
-      const results = await Promise.all(symbols.map(async s => {
-        try {
-          return await fetchV8Single(s);
-        } catch (e) {
-          return { symbol: s, price: null, error: e.message };
-        }
-      }));
-
-      return res.status(200).json({ quotes: results });
-    }
-  } catch (e) {
-    console.error('handler error:', e);
-    return res.status(502).json({ error: 'Provider error: ' + e.message });
+    const quotes = await fetchQuotes(symbols);
+    if (symbols.length === 1) return res.status(200).json(quotes[0] || { error: 'Not found' });
+    return res.status(200).json({ quotes });
+  } catch(e) {
+    console.error('quote error:', e.message);
+    return res.status(502).json({ error: e.message });
   }
 };
