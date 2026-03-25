@@ -1,5 +1,5 @@
 const CACHE = 'portfoy-v1';
-const CORE = ['/hisse-portfoyu/', '/hisse-portfoyu/index.html'];
+const CORE = ['/', '/index.html'];
 self.addEventListener('install', function(e) {
   e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(CORE); }));
   self.skipWaiting();
@@ -19,7 +19,7 @@ self.addEventListener('fetch', function(e) {
         if(r&&r.status===200){var cl=r.clone();caches.open(CACHE).then(function(c){c.put(e.request,cl);});}
         return r;
       }).catch(function(){
-        if(e.request.mode==='navigate') return caches.match('/hisse-portfoyu/index.html');
+        if(e.request.mode==='navigate') return caches.match('/index.html');
       });
     })
   );
