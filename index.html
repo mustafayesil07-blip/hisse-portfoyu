@@ -776,10 +776,34 @@ function fetchAllQuotes(tickers) {
     })
     .then(function(data) {
       var map = {};
-      var list = data.quotes || (data.symbol ? [data] : []);
+      // Vercel proxy farklı formatlar döndürebilir:
+      // 1. { quotes: [...] }
+      // 2. { symbol, price, ... } (tek hisse)
+      // 3. { AAPL: { price, ... }, TSLA: { price, ... } } (obje map)
+      // 4. [{ symbol, price }, ...] (array)
+      var list = [];
+      if (Array.isArray(data)) {
+        list = data;
+      } else if (data.quotes && Array.isArray(data.quotes)) {
+        list = data.quotes;
+      } else if (data.symbol && data.price) {
+        list = [data];
+      } else {
+        // Obje map formatı: { AAPL: { price: 150 }, ... }
+        Object.keys(data).forEach(function(key) {
+          var v = data[key];
+          if (v && typeof v === 'object' && v.price > 0) {
+            map[key.toUpperCase()] = v;
+          } else if (typeof v === 'number' && v > 0) {
+            map[key.toUpperCase()] = { symbol: key, price: v };
+          }
+        });
+      }
       list.forEach(function(q) {
-        if (q.symbol && q.price && q.price > 0) {
-          map[q.symbol.toUpperCase()] = q;
+        var sym = q.symbol || q.ticker;
+        var p = q.price || q.regularMarketPrice || q.ask || 0;
+        if (sym && p > 0) {
+          map[sym.toUpperCase()] = q.price ? q : Object.assign({}, q, { price: p });
         }
       });
       if (Object.keys(map).length === 0) throw new Error('bulk returned no prices');
