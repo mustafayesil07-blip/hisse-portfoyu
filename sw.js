@@ -1,4 +1,4 @@
-const CACHE = 'portfoy-v2';
+const CACHE = 'portfoy-v3';
 const CORE = ['/', '/index.html'];
 
 self.addEventListener('install', function(e) {
@@ -19,6 +19,7 @@ self.addEventListener('fetch', function(e) {
 
   // API isteklerini asla cache'leme — her zaman network'ten al
   if(url.hostname !== self.location.hostname) return;
+  if(url.pathname.startsWith('/api/')) return;
 
   e.respondWith(
     caches.match(e.request).then(function(cached) {
