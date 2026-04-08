@@ -921,6 +921,7 @@ function openHolding(ticker){
 
       '<div class="tab-row" id="hTabRow">' +
         '<div class="tab-btn on buy" id="htab-info" data-htab="info">Özet</div>' +
+        '<div class="tab-btn buy" id="htab-lots" data-htab="lots">Geçmiş</div>' +
         '<div class="tab-btn buy" id="htab-buy" data-htab="buy">Alım</div>' +
         '<div class="tab-btn sell" id="htab-sell" data-htab="sell">Satım</div>' +
         '<div class="tab-btn buy" id="htab-edit" data-htab="edit">Düzenle</div>' +
@@ -950,6 +951,40 @@ function openHolding(ticker){
           '<div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--ink2)">Sektör</span><span style="font-weight:600">' + h.sector + '</span></div>' +
         '</div>' +
       '</div>' +
+
+      // LOTS / HISTORY TAB
+      (function(){
+        var buys  = txData.filter(function(tx){ return tx.ticker===ticker && tx.side==='buy'; }).sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+        var sells = txData.filter(function(tx){ return tx.ticker===ticker && tx.side==='sell'; }).sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+        function rowHtml(tx, accent){
+          var total = tx.qty * tx.price + (tx.komisyon||0);
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.04);margin-bottom:6px">' +
+            '<div style="width:36px;height:36px;border-radius:9px;background:'+accent+'22;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:'+accent+';flex-shrink:0">' + (tx.side==='buy' ? 'AL' : 'SAT') + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:13px;font-weight:700;color:var(--ink)">' + tx.qty + ' adet @ $' + tx.price.toFixed(2) + '</div>' +
+              '<div style="font-size:11px;color:var(--ink3);margin-top:2px">' + (tx.date||'—') + (tx.komisyon ? ' · Kom: $' + tx.komisyon.toFixed(2) : '') + '</div>' +
+            '</div>' +
+            '<div style="text-align:right;flex-shrink:0">' +
+              '<div style="font-size:13px;font-weight:700;font-family:DM Mono,monospace;color:var(--ink)">$' + total.toFixed(2) + '</div>' +
+              '<div style="font-size:10px;color:var(--ink3);margin-top:2px">toplam</div>' +
+            '</div>' +
+          '</div>';
+        }
+        var html = '<div id="htab-lots-content" style="display:none">';
+        if(buys.length){
+          html += '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Alımlar (' + buys.length + ')</div>';
+          html += buys.map(function(tx){ return rowHtml(tx, 'var(--emerald)'); }).join('');
+        }
+        if(sells.length){
+          html += '<div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 8px">Satımlar (' + sells.length + ')</div>';
+          html += sells.map(function(tx){ return rowHtml(tx, 'var(--rose)'); }).join('');
+        }
+        if(!buys.length && !sells.length){
+          html += '<div style="text-align:center;padding:32px 0;color:var(--ink3);font-size:13px">Henüz işlem yok</div>';
+        }
+        html += '</div>';
+        return html;
+      })() +
 
       // BUY TAB
       '<div id="htab-buy-content" style="display:none">' +
@@ -1015,7 +1050,7 @@ function openHolding(ticker){
 }
 
 function switchHTab(tab){
-  ['info','buy','sell','edit','note'].forEach(function(t){
+  ['info','lots','buy','sell','edit','note'].forEach(function(t){
     var btn = document.getElementById('htab-' + t);
     var con = document.getElementById('htab-' + t + '-content');
     if(btn) btn.className = 'tab-btn' + (t==='sell'?' sell':' buy');
