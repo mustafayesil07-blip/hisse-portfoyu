@@ -1,4 +1,4 @@
-const CACHE = 'portfoy-v3';
+const CACHE = 'portfoy-v4';
 const CORE = ['/', '/index.html'];
 
 self.addEventListener('install', function(e) {
@@ -21,6 +21,27 @@ self.addEventListener('fetch', function(e) {
   if(url.hostname !== self.location.hostname) return;
   if(url.pathname.startsWith('/api/')) return;
 
+  // index.html için network-first: güncel versiyonu her zaman al
+  var isNav = e.request.mode === 'navigate' ||
+              url.pathname === '/' ||
+              url.pathname === '/index.html';
+
+  if(isNav) {
+    e.respondWith(
+      fetch(e.request).then(function(r) {
+        if(r && r.status === 200) {
+          var cl = r.clone();
+          caches.open(CACHE).then(function(c) { c.put(e.request, cl); });
+        }
+        return r;
+      }).catch(function() {
+        return caches.match('/index.html');
+      })
+    );
+    return;
+  }
+
+  // Diğer statik dosyalar için cache-first
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       if(cached) return cached;
@@ -30,9 +51,7 @@ self.addEventListener('fetch', function(e) {
           caches.open(CACHE).then(function(c) { c.put(e.request, cl); });
         }
         return r;
-      }).catch(function() {
-        if(e.request.mode === 'navigate') return caches.match('/index.html');
-      });
+      }).catch(function() {});
     })
   );
 });
