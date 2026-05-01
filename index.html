@@ -1619,6 +1619,65 @@ function resetAll(){
 }
 
 
+// ─── TIME WEIGHTED RETURN (Modified Dietz) ───────────────────────
+function computeModifiedDietz(periodStart) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var ps = new Date(periodStart); ps.setHours(0,0,0,0);
+  var startStr = ps.toISOString().split('T')[0];
+  var periodDays = (today - ps) / 86400000;
+  if (periodDays <= 0) return null;
+
+  var tickerMap = {};
+  txData.forEach(function(tx) {
+    if (!tickerMap[tx.ticker]) tickerMap[tx.ticker] = { pre: [], during: [] };
+    if (tx.date < startStr) tickerMap[tx.ticker].pre.push(tx);
+    else                    tickerMap[tx.ticker].during.push(tx);
+  });
+
+  var bmv = 0, emv = 0, totalCF = 0, weightedCF = 0;
+
+  Object.keys(tickerMap).forEach(function(ticker) {
+    var d = tickerMap[ticker];
+
+    // Portfolio value at start of period (cost-basis approximation)
+    var qty = 0, cost = 0;
+    d.pre.forEach(function(tx) {
+      if (tx.side === 'buy') {
+        cost += tx.qty * tx.price + (tx.komisyon || 0);
+        qty  += tx.qty;
+      } else if (qty > 0) {
+        var ratio = Math.min(tx.qty / qty, 1);
+        cost = cost * (1 - ratio);
+        qty  = Math.max(0, qty - tx.qty);
+      }
+    });
+    bmv += Math.max(0, qty) * (qty > 0 ? cost / qty : 0);
+
+    // Cash flows during period
+    d.during.forEach(function(tx) {
+      var txDate = new Date(tx.date + 'T00:00:00'); txDate.setHours(0,0,0,0);
+      var elapsed = (txDate - ps) / 86400000;
+      var wi = Math.max(0, (periodDays - elapsed) / periodDays);
+      var cf = tx.side === 'buy'
+        ?  (tx.qty * tx.price + (tx.komisyon || 0))
+        : -(tx.qty * tx.price - (tx.komisyon || 0));
+      totalCF    += cf;
+      weightedCF += wi * cf;
+    });
+
+    // Current market value
+    var currentQty = 0;
+    d.pre.concat(d.during).forEach(function(tx) {
+      currentQty += tx.side === 'buy' ? tx.qty : -tx.qty;
+    });
+    emv += Math.max(0, currentQty) * getEffectivePriceForTicker(ticker, 0);
+  });
+
+  var denom = bmv + weightedCF;
+  if (denom <= 0) return null;
+  return (emv - bmv - totalCF) / denom * 100;
+}
+
 // ─── METRİKLER ───────────────────────
 function renderMetrics(){
   var holdings = computeHoldings();
@@ -1626,6 +1685,12 @@ function renderMetrics(){
   var totalCost= holdings.reduce(function(s,h){return s+h.costBasis;},0);
   var totalPnl = totalMV - totalCost;
   var totalPct = totalCost>0 ? totalPnl/totalCost*100 : 0;
+
+  // TWR dönemleri
+  var _now = new Date();
+  var twrMTD = computeModifiedDietz(new Date(_now.getFullYear(), _now.getMonth(), 1));
+  var twrYTD = computeModifiedDietz(new Date(_now.getFullYear(), 0, 1));
+  var twr1Y  = computeModifiedDietz(new Date(_now.getFullYear()-1, _now.getMonth(), _now.getDate()));
 
   // Concentration risk: top holding weight
   var weights = holdings.map(function(h){ return totalMV>0 ? h.marketValue/totalMV : 0; });
@@ -1688,7 +1753,30 @@ function renderMetrics(){
   else if(hhiPct>10){riskLabel='Orta Konsantrasyon';riskColor='var(--amber)';}
   else{riskLabel='İyi Çeşitlendirilmiş';riskColor='var(--emerald)';}
 
+  function twrCell(label, val) {
+    var na = val === null;
+    var color = na ? 'var(--ink3)' : val >= 0 ? 'var(--emerald)' : 'var(--rose)';
+    var txt   = na ? '—' : (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+    return '<div style="flex:1;text-align:center;padding:14px 8px">'+
+      '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin-bottom:8px">'+label+'</div>'+
+      '<div style="font-size:22px;font-weight:800;font-family:DM Mono,monospace;color:'+color+'">'+txt+'</div>'+
+    '</div>';
+  }
+
   mc.innerHTML =
+    // TWR card
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+      '<div style="padding:12px 16px 0;font-size:11px;font-weight:800;color:var(--ink2);letter-spacing:.3px">⏱ Time Weighted Return</div>'+
+      '<div style="display:flex;gap:0">'+
+        twrCell('MTD', twrMTD)+
+        '<div style="width:1px;background:var(--rim);margin:12px 0"></div>'+
+        twrCell('YTD', twrYTD)+
+        '<div style="width:1px;background:var(--rim);margin:12px 0"></div>'+
+        twrCell('1 Yıl', twr1Y)+
+      '</div>'+
+      '<div style="padding:6px 16px 10px;font-size:9px;color:var(--ink3)">Modified Dietz yöntemi · Nakit akışı ağırlıklı</div>'+
+    '</div>'+
+
     // Summary grid
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px">'+
       mCard('Toplam Getiri', (totalPct>=0?'+':'')+totalPct.toFixed(2)+'%', fmt$(totalPnl), totalPnl>=0?'var(--emerald)':'var(--rose)')+
