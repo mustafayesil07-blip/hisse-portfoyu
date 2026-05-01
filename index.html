@@ -423,6 +423,22 @@ body{
         <div class="hs-val" id="heroCount">—</div>
       </div>
     </div>
+    <div style="display:flex;justify-content:space-around;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)">
+      <div style="text-align:center">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">MTD</div>
+        <div id="heroTWR_MTD" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+      <div style="text-align:center">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">YTD</div>
+        <div id="heroTWR_YTD" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+      <div style="text-align:center">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">1 Yıl</div>
+        <div id="heroTWR_1Y" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
+      </div>
+    </div>
   </div>
 
   <div class="sh" style="padding-top:16px">
@@ -1176,6 +1192,22 @@ function renderPortfolio(){
   var hk=document.getElementById('heroKazanc');
   if(hk){hk.textContent=(totalPnl>=0?'+':'')+fmt$(totalPnl).replace('$','');hk.style.color=totalPnl>=0?'var(--emerald)':'var(--rose)';}
   var hc=document.getElementById('heroCount'); if(hc) hc.textContent=holdings.length;
+
+  // Hero TWR
+  var _n=new Date();
+  var _twrs={
+    MTD: computeModifiedDietz(new Date(_n.getFullYear(),_n.getMonth(),1)),
+    YTD: computeModifiedDietz(new Date(_n.getFullYear(),0,1)),
+    '1Y': computeModifiedDietz(new Date(_n.getFullYear()-1,_n.getMonth(),_n.getDate()))
+  };
+  ['MTD','YTD','1Y'].forEach(function(k){
+    var el=document.getElementById('heroTWR_'+k);
+    if(!el) return;
+    var v=_twrs[k];
+    if(v===null){el.textContent='—';el.style.color='rgba(255,255,255,.4)';return;}
+    el.textContent=(v>=0?'+':'')+v.toFixed(2)+'%';
+    el.style.color=v>=0?'var(--emerald)':'var(--rose)';
+  });
 
   // Sort by daily change % descending (best performers first)
   // Holdings with no dayChange data go to end, sorted by unrealizedPct
