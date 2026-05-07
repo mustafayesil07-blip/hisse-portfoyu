@@ -276,6 +276,15 @@ body{
    TRANSACTIONS SCREEN
 ═══════════════════════════════════════ */
 .txlist{padding:0 20px;display:flex;flex-direction:column;gap:7px}
+/* ── OWNER TOGGLE ─────────────────────── */
+.owner-toggle{display:flex;gap:3px;background:rgba(255,255,255,.05);padding:3px;border-radius:10px;margin-bottom:14px}
+.ot-btn{flex:1;font-size:12px;font-weight:700;padding:7px;border-radius:8px;cursor:pointer;text-align:center;border:none;background:transparent;color:var(--ink3);transition:all .15s;font-family:'DM Sans',sans-serif}
+.ot-btn.eda.on {background:rgba(56,189,248,.15);color:var(--sky)}
+.ot-btn.mus.on {background:rgba(167,139,250,.15);color:var(--violet)}
+.owner-badge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;cursor:pointer;letter-spacing:.3px;flex-shrink:0;border:none;font-family:'DM Sans',sans-serif}
+.owner-badge.eda{background:rgba(56,189,248,.15);color:var(--sky)}
+.owner-badge.mus{background:rgba(167,139,250,.15);color:var(--violet)}
+
 .txcard{
   background:var(--s1);border:1px solid var(--rim);
   border-radius:var(--r-sm);padding:13px 15px;
@@ -496,6 +505,12 @@ body{
       <option>2026</option><option>2025</option><option>Tümü</option>
     </select>
   </div>
+  <div style="padding:0 20px 4px">
+    <div style="display:flex;gap:3px;background:rgba(255,255,255,.05);padding:3px;border-radius:12px">
+      <div id="vtab-eda" onclick="switchVergiTab('eda')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:rgba(56,189,248,.15);color:var(--sky)">Eda</div>
+      <div id="vtab-mus" onclick="switchVergiTab('mustafa')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink3)">Mustafa</div>
+    </div>
+  </div>
 
   <div class="vergi-hero">
     <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.7)">📊 Yıl Sonu Vergi Özeti</div>
@@ -591,6 +606,8 @@ var CURRENT_SEED_VER = '20260317e'; // bump this whenever seed data changes
 // Transactions: [{id, ticker, sector, side:'buy'|'sell', qty, price, komisyon, date, note}]
 var txData = [];
 try { var _t=localStorage.getItem(LS_TX); if(_t) txData=JSON.parse(_t); } catch(e){}
+// Geçmiş işlemlere owner alanı ekle (varsayılan: eda)
+txData.forEach(function(tx){ if(!tx.owner) tx.owner='eda'; });
 
 // Kur database
 var TCMB_KUR = {"2025-08-18":40.8084,"2025-09-12":41.209,"2025-09-15":41.255,"2025-09-19":41.2344,"2025-09-23":41.3375,"2025-09-24":41.3726,"2025-09-26":41.4179,"2025-09-29":41.4984,"2025-10-01":41.513,"2025-10-03":41.5226,"2025-10-06":41.6225,"2025-10-07":41.6217,"2025-10-08":41.633,"2025-10-09":41.6421,"2025-10-10":41.6388,"2025-10-13":41.7196,"2025-10-14":41.7496,"2025-10-15":41.7611,"2025-10-17":41.7855,"2025-10-20":41.8768,"2025-10-21":41.8872,"2025-10-22":41.8966,"2025-10-23":41.9042,"2025-10-24":41.8427,"2025-10-27":41.8699,"2025-10-28":41.8699,"2025-10-29":41.8699,"2025-10-30":41.9,"2025-10-31":41.8922,"2025-11-03":41.9751,"2025-11-04":42.0042,"2025-11-05":42.0362,"2025-11-10":42.1124,"2025-11-11":42.1526,"2025-11-12":42.1636,"2025-11-13":42.1724,"2025-11-14":42.1661,"2025-11-18":42.2641,"2025-11-19":42.2756,"2025-11-20":42.2882,"2025-11-21":42.2819,"2025-11-25":42.3668,"2025-11-26":42.3578,"2025-11-28":42.3547,"2025-12-04":42.3771,"2025-12-05":42.3606,"2025-12-08":42.4735,"2025-12-09":42.497,"2025-12-10":42.5179,"2025-12-11":42.5343,"2025-12-12":42.5344,"2025-12-15":42.6211,"2025-12-19":42.6532,"2025-12-22":42.734,"2025-12-26":42.7656,"2025-12-29":42.8542,"2025-12-31":42.8457,"2026-01-02":42.881,"2026-01-05":42.9648,"2026-01-06":42.9663,"2026-01-07":42.9743,"2026-01-08":42.9747,"2026-01-09":42.9863,"2026-01-12":43.0609,"2026-01-13":43.0765,"2026-01-14":43.0925,"2026-01-16":43.0883,"2026-01-19":43.1943,"2026-01-20":43.2061,"2026-01-21":43.2165,"2026-01-22":43.2247,"2026-01-23":43.2036,"2026-01-26":43.2978,"2026-01-27":43.3158,"2026-01-28":43.3327,"2026-01-29":43.3443,"2026-01-30":43.3414,"2026-02-02":43.4168,"2026-02-03":43.4142,"2026-02-04":43.4245,"2026-02-05":43.4555,"2026-02-06":43.4542,"2026-02-09":43.5182,"2026-02-10":43.545,"2026-02-11":43.5633,"2026-02-12":43.5702,"2026-02-13":43.5433,"2026-02-17":43.6524,"2026-02-18":43.6747,"2026-02-19":43.6913,"2026-02-20":43.6883,"2026-02-23":43.7542,"2026-02-24":43.7775,"2026-02-25":43.7888,"2026-02-26":43.8026,"2026-02-27":43.8,"2026-03-02":43.885,"2026-03-03":43.8913,"2026-03-04":43.8932,"2026-03-05":43.9135,"2026-03-06":43.9055,"2026-03-09":44.0007,"2026-03-10":43.9826,"2026-03-11":43.9964,"2026-03-12":44.031};
@@ -1004,6 +1021,8 @@ function openHolding(ticker){
 
       // BUY TAB
       '<div id="htab-buy-content" style="display:none">' +
+        '<div class="owner-toggle"><button class="ot-btn eda on" id="hb-ot-eda" onclick="setHTxOwner(\'buy\',\'eda\')">Eda</button><button class="ot-btn mus" id="hb-ot-mus" onclick="setHTxOwner(\'buy\',\'mustafa\')">Mustafa</button></div>' +
+        '<input type="hidden" id="hb_owner" value="eda">' +
         '<div class="frow"><div><label class="fi-lbl">Adet</label><input id="hb_qty" type="number" class="fi" placeholder="10"></div><div><label class="fi-lbl">Fiyat ($)</label><input id="hb_price" type="number" class="fi" placeholder="' + h.currentPrice.toFixed(2) + '" step="0.01"></div></div>' +
         '<div class="frow"><div><label class="fi-lbl">Komisyon ($)</label><input id="hb_kom" type="number" class="fi" placeholder="0.00" step="0.01"></div><div><label class="fi-lbl">Tarih</label><input id="hb_date" type="date" class="fi"></div></div>' +
         '<button class="btn-buy" data-action="htrade-buy">Alim Kaydet</button>' +
@@ -1011,6 +1030,8 @@ function openHolding(ticker){
 
       // SELL TAB
       '<div id="htab-sell-content" style="display:none">' +
+        '<div class="owner-toggle"><button class="ot-btn eda on" id="hs-ot-eda" onclick="setHTxOwner(\'sell\',\'eda\')">Eda</button><button class="ot-btn mus" id="hs-ot-mus" onclick="setHTxOwner(\'sell\',\'mustafa\')">Mustafa</button></div>' +
+        '<input type="hidden" id="hs_owner" value="eda">' +
         '<div style="background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--rose)">Mevcut pozisyon: <strong>' + h.qty + ' adet</strong></div>' +
         '<div class="frow"><div><label class="fi-lbl">Adet</label><input id="hs_qty" type="number" class="fi" placeholder="' + h.qty + '" max="' + h.qty + '"></div><div><label class="fi-lbl">Fiyat ($)</label><input id="hs_price" type="number" class="fi" placeholder="' + h.currentPrice.toFixed(2) + '" step="0.01"></div></div>' +
         '<div class="frow"><div><label class="fi-lbl">Komisyon ($)</label><input id="hs_kom" type="number" class="fi" placeholder="0.00" step="0.01"></div><div><label class="fi-lbl">Tarih</label><input id="hs_date" type="date" class="fi"></div></div>' +
@@ -1078,6 +1099,16 @@ function switchHTab(tab){
   if(activeCon) activeCon.style.display = 'block';
 }
 
+function setHTxOwner(side, owner){
+  var prefix = side==='buy' ? 'hb' : 'hs';
+  var ownerEl = document.getElementById(prefix+'_owner');
+  if(ownerEl) ownerEl.value = owner;
+  var edaBtn = document.getElementById(prefix+'-ot-eda');
+  var musBtn = document.getElementById(prefix+'-ot-mus');
+  if(edaBtn){ edaBtn.classList.toggle('on', owner==='eda'); }
+  if(musBtn){ musBtn.classList.toggle('on', owner==='mustafa'); }
+}
+
 function doHoldingTrade(ticker, side){
   var qtyEl  = document.getElementById('h' + side[0] + '_qty');
   var priceEl= document.getElementById('h' + side[0] + '_price');
@@ -1092,6 +1123,7 @@ function doHoldingTrade(ticker, side){
     side: side, qty: qty, price: price,
     komisyon: parseFloat(komEl ? komEl.value : 0) || 0,
     date: dateEl ? dateEl.value : new Date().toISOString().split('T')[0],
+    owner: (document.getElementById('h'+side[0]+'_owner')||{value:'eda'}).value,
     note: ''
   };
   txData.push(tx); saveTx();
@@ -1365,6 +1397,15 @@ function renderDist(){
 
 // ─── TRANSACTIONS ─────────────────────
 var curTxFilter='all';
+function toggleTxOwner(id){
+  var tx=txData.find(function(t){return t.id===id;});
+  if(!tx) return;
+  tx.owner = (tx.owner||'eda')==='eda' ? 'mustafa' : 'eda';
+  saveTx();
+  renderTx(curTxFilter);
+  if(curScreen==='vergi') renderVergi();
+}
+
 function renderTx(filter){
   curTxFilter=filter;
   var all=[...txData].reverse();
@@ -1377,16 +1418,21 @@ function renderTx(filter){
   list.innerHTML=f.map(function(tx){
     var c=tickerColor(tx.ticker);
     var total=tx.qty*tx.price+(tx.side==='buy'?tx.komisyon:-tx.komisyon);
+    var owner=tx.owner||'eda';
     return '<div class="txcard">'+
       '<div class="tx-side tx-'+(tx.side)+'">'+( tx.side==='buy'?'AL':'SAT')+'</div>'+
       '<div class="tx-body">'+
-        '<div class="tx-ticker">'+tx.ticker+'<span style="font-size:10px;background:var(--s3);color:var(--ink2);padding:1px 6px;border-radius:5px;margin-left:7px">'+tx.sector+'</span></div>'+
+        '<div class="tx-ticker">'+tx.ticker+
+          '<span style="font-size:10px;background:var(--s3);color:var(--ink2);padding:1px 6px;border-radius:5px;margin-left:7px">'+tx.sector+'</span>'+
+        '</div>'+
         '<div class="tx-meta">'+tx.date+' · '+tx.qty+' adet @ '+fmt$(tx.price)+' · Kom: '+fmt$(tx.komisyon)+'</div>'+
       '</div>'+
-      '<div class="tx-right">'+
+      '<div class="tx-right" style="align-items:flex-end">'+
         '<div class="tx-total" style="color:'+(tx.side==='buy'?'var(--rose)':'var(--emerald)')+'">'+
           (tx.side==='buy'?'-':'+')+fmt$(total)+'</div>'+
-        '<div class="tx-detail">'+tx.qty+' × '+fmt$(tx.price)+'</div>'+
+        '<button class="owner-badge '+(owner==='eda'?'eda':'mus')+'" data-txid="'+tx.id+'" onclick="toggleTxOwner('+tx.id+')">'+
+          (owner==='eda'?'EDA':'MUS')+
+        '</button>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -1402,10 +1448,21 @@ document.addEventListener('click',function(e){
 });
 
 // ─── VERGİ ────────────────────────────
+var curVergiOwner = 'eda';
+function switchVergiTab(owner){
+  curVergiOwner = owner;
+  var edaTab = document.getElementById('vtab-eda');
+  var musTab = document.getElementById('vtab-mus');
+  if(edaTab){ edaTab.style.background=owner==='eda'?'rgba(56,189,248,.15)':'transparent'; edaTab.style.color=owner==='eda'?'var(--sky)':'var(--ink3)'; }
+  if(musTab){ musTab.style.background=owner==='mustafa'?'rgba(167,139,250,.15)':'transparent'; musTab.style.color=owner==='mustafa'?'var(--violet)':'var(--ink3)'; }
+  renderVergi();
+}
+
 function renderVergi(){
   var yil=document.getElementById('vergiYil')?document.getElementById('vergiYil').value:'2026';
   // Always use live txData; if empty fall back to seed
-  var allTx = (txData && txData.length) ? txData : (typeof IBKR_SEED_TX!=='undefined' ? IBKR_SEED_TX : []);
+  var allTx = ((txData && txData.length) ? txData : (typeof IBKR_SEED_TX!=='undefined' ? IBKR_SEED_TX : []))
+    .filter(function(tx){ return (tx.owner||'eda') === curVergiOwner; });
   var sells=allTx.filter(function(tx){
     if(tx.side!=='sell'||!tx.date) return false;
     if(yil==='Tümü') return true;
@@ -1550,6 +1607,11 @@ function openAddTrade(){
   m.innerHTML='<div class="sheet">'+
     '<div class="sheet-handle"></div>'+
     '<div class="sheet-title">İşlem Ekle</div>'+
+    '<div class="owner-toggle">'+
+      '<button class="ot-btn eda on" id="ot-eda" onclick="setTxOwner(\'eda\')">Eda</button>'+
+      '<button class="ot-btn mus" id="ot-mus" onclick="setTxOwner(\'mustafa\')">Mustafa</button>'+
+    '</div>'+
+    '<input type="hidden" id="tx-owner" value="eda">'+
     '<div class="tab-row">'+
       '<div class="tab-btn on buy" id="tab-buy" onclick="switchTab(\'buy\')">📈 Alım</div>'+
       '<div class="tab-btn sell" id="tab-sell" onclick="switchTab(\'sell\')">📉 Satım</div>'+
@@ -1574,6 +1636,14 @@ function openAddTrade(){
   document.body.appendChild(m);
   m.querySelector('#tx-date').value=new Date().toISOString().split('T')[0];
   m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+}
+
+function setTxOwner(owner){
+  document.getElementById('tx-owner').value=owner;
+  var edaBtn=document.getElementById('ot-eda');
+  var musBtn=document.getElementById('ot-mus');
+  if(edaBtn){ edaBtn.classList.toggle('on', owner==='eda'); }
+  if(musBtn){ musBtn.classList.toggle('on', owner==='mustafa'); }
 }
 
 function switchTab(side){
@@ -1604,6 +1674,7 @@ function saveTrade(){
     qty,price,
     komisyon:parseFloat(document.getElementById('tx-kom').value)||0,
     date:document.getElementById('tx-date').value,
+    owner:document.getElementById('tx-owner')?document.getElementById('tx-owner').value:'eda',
     note:''
   };
   var cp=parseFloat(document.getElementById('tx-curprice').value);
