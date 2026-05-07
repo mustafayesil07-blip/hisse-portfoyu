@@ -1469,66 +1469,81 @@ function renderVergi(){
     return tx.date.startsWith(yil);
   });
 
-  // Vergi formülü (Türk mevzuatı):
-  // Matrah = (satış tutarı - satış komisyonu) × satış günü kuru
-  //        - (alış tutarı + alış komisyonu) × alış günü kuru
-  // Birden fazla alış varsa: her alış kendi günü kuruyla TRY'ye çevrilir,
-  // ağırlıklı ortalama alış TRY maliyeti hesaplanır.
-  var rows=sells.map(function(sell){
-    // Satış tarihinden önce veya aynı günkü tüm alışlar
-    var buys=allTx.filter(function(tx){
-      return tx.ticker===sell.ticker && tx.side==='buy' && tx.date<=sell.date;
+  // FIFO vergi hesabı (Türk mevzuatı):
+  // Her hisse için alış lotları eski→yeni sırayla tüketilir.
+  // Matrah = (satış geliri TRY) − (FIFO alış maliyeti TRY)
+  // Her lot kendi alış tarihi kuruyla TRY'ye çevrilir.
+  var rows = [];
+  var tickers = [];
+  allTx.forEach(function(tx){ if(tickers.indexOf(tx.ticker)<0) tickers.push(tx.ticker); });
+
+  tickers.forEach(function(ticker){
+    // Ticker'a ait tüm işlemler tarihe göre sıralı (aynı günde alım önce)
+    var tickerTx = allTx
+      .filter(function(tx){ return tx.ticker===ticker; })
+      .sort(function(a,b){
+        var d=a.date.localeCompare(b.date);
+        return d!==0 ? d : (a.side==='buy'?-1:1);
+      });
+
+    // FIFO lot kuyruğu: her alış bir lot
+    var queue = [];
+
+    tickerTx.forEach(function(tx){
+      if(tx.side==='buy'){
+        queue.push({ qty:tx.qty, price:tx.price, komisyon:tx.komisyon, date:tx.date, remaining:tx.qty });
+        return;
+      }
+      // SELL: kuyruktan eski lotları tüket
+      var toSell = tx.qty;
+      var consumed = []; // [{qty, price, komisyon, date, lotQty}]
+      for(var i=0; i<queue.length && toSell>0; i++){
+        var lot = queue[i];
+        if(lot.remaining<=0) continue;
+        var take = Math.min(lot.remaining, toSell);
+        consumed.push({ qty:take, price:lot.price, komisyon:lot.komisyon, date:lot.date, lotQty:lot.qty });
+        lot.remaining -= take;
+        toSell -= take;
+      }
+
+      // Bu satışı tabloya ekleyecek miyiz? (yıl filtresi)
+      var inPeriod = (yil==='Tümü') ? true : tx.date.startsWith(yil);
+      if(!inPeriod) return;
+
+      // FIFO alış maliyeti TRY
+      var totalBuyTRY = consumed.reduce(function(s,lot){
+        var kur = getKur(lot.date)||0;
+        if(kur===0) return s;
+        var proratedKom = lot.lotQty>0 ? lot.komisyon*(lot.qty/lot.lotQty) : 0;
+        return s + (lot.qty*lot.price + proratedKom)*kur;
+      }, 0);
+      var missingBuyKur = consumed.some(function(lot){ return (getKur(lot.date)||0)===0; });
+
+      var sellKur = getKur(tx.date)||0;
+      var sellRevenueTRY = sellKur>0 ? (tx.qty*tx.price - tx.komisyon)*sellKur : null;
+      var matrahTRY = (sellRevenueTRY!==null && !missingBuyKur && totalBuyTRY>0)
+        ? sellRevenueTRY - totalBuyTRY : null;
+
+      var avgCostUSD = consumed.length>0
+        ? consumed.reduce(function(s,lot){return s+lot.qty*lot.price;},0)/tx.qty : 0;
+      var pnlUSD = (tx.qty*tx.price - tx.komisyon) - tx.qty*avgCostUSD;
+      var buyKomisyon = consumed.reduce(function(s,lot){
+        return s + (lot.lotQty>0 ? lot.komisyon*(lot.qty/lot.lotQty) : 0);
+      }, 0);
+
+      rows.push({
+        sell:tx, avgCostUSD:avgCostUSD,
+        avgCostTRY: tx.qty>0 ? totalBuyTRY/tx.qty : 0,
+        pnlUSD:pnlUSD, sellKur:sellKur,
+        matrahTRY:matrahTRY, buyKomisyon:buyKomisyon,
+        missingBuyKur:missingBuyKur, kur:sellKur
+      });
     });
-    var totalBuyQty = buys.reduce(function(s,b){return s+b.qty;},0);
-
-    // Her alışı kendi günü kuruyla TRY'ye çevir → ağırlıklı ortalama birim TRY maliyet
-    var totalBuyTRY = buys.reduce(function(s,b){
-      var bKur = getKur(b.date) || 0;
-      if(bKur === 0) return s; // kur yoksa bu alışı atlıyoruz (eksik kur uyarısı için)
-      return s + (b.qty * b.price + b.komisyon) * bKur;
-    }, 0);
-    var missingBuyKur = buys.some(function(b){ return (getKur(b.date)||0)===0; });
-
-    // Ortalama birim TRY maliyet
-    var avgCostTRY = totalBuyQty > 0 ? totalBuyTRY / totalBuyQty : 0;
-
-    // Satış kuru
-    var sellKur = getKur(sell.date) || 0;
-
-    // Satış geliri (TRY) = (adet × satış fiyatı - satış komisyonu) × satış kuru
-    var sellRevenueTRY = sellKur > 0 ? (sell.qty * sell.price - sell.komisyon) * sellKur : null;
-
-    // Alış maliyeti (TRY) = ortalama birim TRY maliyet × satılan adet
-    var buyCostTRY = avgCostTRY * sell.qty;
-
-    // Matrah (TRY)
-    var matrahTRY = (sellRevenueTRY !== null && !missingBuyKur && avgCostTRY > 0)
-      ? sellRevenueTRY - buyCostTRY
-      : null;
-
-    // USD P&L (gösterim için)
-    var avgCostUSD = totalBuyQty > 0
-      ? buys.reduce(function(s,b){return s+b.qty*b.price+b.komisyon;},0) / totalBuyQty
-      : 0;
-    var pnlUSD = (sell.qty * sell.price - sell.komisyon) - sell.qty * avgCostUSD;
-
-    // Alış komisyonu (bilgi amaçlı gösterim)
-    var totalBuyKom = buys.reduce(function(s,b){return s+b.komisyon;},0);
-    var buyKomisyon = totalBuyQty>0 ? totalBuyKom*(sell.qty/totalBuyQty) : 0;
-
-    return {
-      sell: sell,
-      avgCostUSD: avgCostUSD,
-      avgCostTRY: avgCostTRY,
-      pnlUSD: pnlUSD,
-      sellKur: sellKur,
-      matrahTRY: matrahTRY,
-      buyKomisyon: buyKomisyon,
-      missingBuyKur: missingBuyKur,
-      // backward compat
-      kur: sellKur
-    };
   });
+
+  // Satış tarihine göre sırala
+  rows.sort(function(a,b){ return a.sell.date.localeCompare(b.sell.date); });
+  var sells = rows.map(function(r){ return r.sell; });
 
   var totalPnlUSD=rows.reduce(function(s,r){return s+r.pnlUSD;},0);
   var totalMatrah=rows.filter(function(r){return r.matrahTRY!==null;}).reduce(function(s,r){return s+r.matrahTRY;},0);
