@@ -727,15 +727,34 @@ function computeHoldings(){
   Object.keys(map).forEach(function(t){
     var h=map[t];
     if(h.qty>0){
-      h.avgCost=h.qty>0?h.totalCost/h.qty:0; // approximate avg
-      // Recalculate properly: FIFO avg
-      var buys=txData.filter(function(tx){return tx.ticker===t&&tx.side==='buy';});
-      var sells=txData.filter(function(tx){return tx.ticker===t&&tx.side==='sell';});
-      var totalBuyQty=buys.reduce(function(s,b){return s+b.qty;},0);
-      var totalBuyCost=buys.reduce(function(s,b){return s+b.qty*b.price+b.komisyon;},0);
-      var totalSellQty=sells.reduce(function(s,s2){return s+s2.qty;},0);
-      // Weighted avg of remaining
-      h.avgCost=totalBuyQty>0?totalBuyCost/totalBuyQty:0;
+      // FIFO: tarihe göre sırala, satışları en eski lotlardan tüket, kalanın ağırlıklı ortalamasını al
+      var tickerTx=txData.filter(function(tx){return tx.ticker===t;}).slice().sort(function(a,b){
+        return (a.date||'').localeCompare(b.date||'');
+      });
+      var fifoQueue=[]; // {qty, remaining, price, komisyon}
+      tickerTx.forEach(function(tx){
+        if(tx.side==='buy'){
+          fifoQueue.push({qty:tx.qty, remaining:tx.qty, price:tx.price, komisyon:tx.komisyon||0});
+        } else {
+          var toSell=tx.qty;
+          for(var i=0;i<fifoQueue.length&&toSell>0;i++){
+            var lot=fifoQueue[i];
+            if(lot.remaining<=0) continue;
+            var take=Math.min(lot.remaining,toSell);
+            lot.remaining-=take;
+            toSell-=take;
+          }
+        }
+      });
+      var remainingCost=0, remainingQty=0;
+      fifoQueue.forEach(function(lot){
+        if(lot.remaining>0){
+          var proratedKom=lot.qty>0?lot.komisyon*(lot.remaining/lot.qty):0;
+          remainingCost+=lot.remaining*lot.price+proratedKom;
+          remainingQty+=lot.remaining;
+        }
+      });
+      h.avgCost=remainingQty>0?remainingCost/remainingQty:0;
       h.currentPrice=getEffectivePriceForTicker(t,h.avgCost);
       h.marketValue=h.qty*h.currentPrice;
       h.costBasis=h.qty*h.avgCost;
