@@ -276,6 +276,17 @@ body{
    TRANSACTIONS SCREEN
 ═══════════════════════════════════════ */
 .txlist{padding:0 20px;display:flex;flex-direction:column;gap:7px}
+/* ── OWNER TOGGLE ─────────────────────── */
+.owner-toggle{display:flex;gap:3px;background:rgba(255,255,255,.05);padding:3px;border-radius:10px;margin-bottom:14px}
+.ot-btn{flex:1;font-size:12px;font-weight:700;padding:7px;border-radius:8px;cursor:pointer;text-align:center;border:none;background:transparent;color:var(--ink3);transition:all .15s;font-family:'DM Sans',sans-serif}
+.ot-btn.eda.on {background:rgba(56,189,248,.15);color:var(--sky)}
+.ot-btn.mus.on {background:rgba(167,139,250,.15);color:var(--violet)}
+.ot-btn.ays.on {background:rgba(52,211,153,.15);color:var(--mint)}
+.owner-badge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;cursor:pointer;letter-spacing:.3px;flex-shrink:0;border:none;font-family:'DM Sans',sans-serif}
+.owner-badge.eda{background:rgba(56,189,248,.15);color:var(--sky)}
+.owner-badge.mus{background:rgba(167,139,250,.15);color:var(--violet)}
+.owner-badge.ays{background:rgba(52,211,153,.15);color:var(--mint)}
+
 .txcard{
   background:var(--s1);border:1px solid var(--rim);
   border-radius:var(--r-sm);padding:13px 15px;
@@ -423,6 +434,22 @@ body{
         <div class="hs-val" id="heroCount">—</div>
       </div>
     </div>
+    <div style="display:flex;justify-content:space-around;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)">
+      <div style="text-align:center">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">MTD</div>
+        <div id="heroTWR_MTD" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+      <div style="text-align:center">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">YTD</div>
+        <div id="heroTWR_YTD" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+      <div style="text-align:center">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">1 Yıl</div>
+        <div id="heroTWR_1Y" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
+      </div>
+    </div>
   </div>
 
   <div class="sh" style="padding-top:16px">
@@ -479,6 +506,13 @@ body{
     <select id="vergiYil" onchange="renderVergi()" style="background:var(--s2);border:1px solid var(--rim);border-radius:9px;padding:6px 11px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;outline:none">
       <option>2026</option><option>2025</option><option>Tümü</option>
     </select>
+  </div>
+  <div style="padding:0 20px 4px">
+    <div style="display:flex;gap:3px;background:rgba(255,255,255,.05);padding:3px;border-radius:12px">
+      <div id="vtab-eda" onclick="switchVergiTab('eda')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:rgba(56,189,248,.15);color:var(--sky)">Eda</div>
+      <div id="vtab-mus" onclick="switchVergiTab('mustafa')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink3)">Mustafa</div>
+      <div id="vtab-ays" onclick="switchVergiTab('ayse')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink3)">Ayşe</div>
+    </div>
   </div>
 
   <div class="vergi-hero">
@@ -576,6 +610,8 @@ var LS_VERGI_OVERRIDE = 'portfolio_vergi_override_v1';
 // Transactions: [{id, ticker, sector, side:'buy'|'sell', qty, price, komisyon, date, note}]
 var txData = [];
 try { var _t=localStorage.getItem(LS_TX); if(_t) txData=JSON.parse(_t); } catch(e){}
+// Geçmiş işlemlere owner alanı ekle (varsayılan: eda)
+txData.forEach(function(tx){ if(!tx.owner) tx.owner='eda'; });
 
 // Kur database
 var TCMB_KUR = {"2025-08-18":40.8084,"2025-09-12":41.209,"2025-09-15":41.255,"2025-09-19":41.2344,"2025-09-23":41.3375,"2025-09-24":41.3726,"2025-09-26":41.4179,"2025-09-29":41.4984,"2025-10-01":41.513,"2025-10-03":41.5226,"2025-10-06":41.6225,"2025-10-07":41.6217,"2025-10-08":41.633,"2025-10-09":41.6421,"2025-10-10":41.6388,"2025-10-13":41.7196,"2025-10-14":41.7496,"2025-10-15":41.7611,"2025-10-17":41.7855,"2025-10-20":41.8768,"2025-10-21":41.8872,"2025-10-22":41.8966,"2025-10-23":41.9042,"2025-10-24":41.8427,"2025-10-27":41.8699,"2025-10-28":41.8699,"2025-10-29":41.8699,"2025-10-30":41.9,"2025-10-31":41.8922,"2025-11-03":41.9751,"2025-11-04":42.0042,"2025-11-05":42.0362,"2025-11-10":42.1124,"2025-11-11":42.1526,"2025-11-12":42.1636,"2025-11-13":42.1724,"2025-11-14":42.1661,"2025-11-18":42.2641,"2025-11-19":42.2756,"2025-11-20":42.2882,"2025-11-21":42.2819,"2025-11-25":42.3668,"2025-11-26":42.3578,"2025-11-28":42.3547,"2025-12-04":42.3771,"2025-12-05":42.3606,"2025-12-08":42.4735,"2025-12-09":42.497,"2025-12-10":42.5179,"2025-12-11":42.5343,"2025-12-12":42.5344,"2025-12-15":42.6211,"2025-12-19":42.6532,"2025-12-22":42.734,"2025-12-26":42.7656,"2025-12-29":42.8542,"2025-12-31":42.8457,"2026-01-02":42.881,"2026-01-05":42.9648,"2026-01-06":42.9663,"2026-01-07":42.9743,"2026-01-08":42.9747,"2026-01-09":42.9863,"2026-01-12":43.0609,"2026-01-13":43.0765,"2026-01-14":43.0925,"2026-01-16":43.0883,"2026-01-19":43.1943,"2026-01-20":43.2061,"2026-01-21":43.2165,"2026-01-22":43.2247,"2026-01-23":43.2036,"2026-01-26":43.2978,"2026-01-27":43.3158,"2026-01-28":43.3327,"2026-01-29":43.3443,"2026-01-30":43.3414,"2026-02-02":43.4168,"2026-02-03":43.4142,"2026-02-04":43.4245,"2026-02-05":43.4555,"2026-02-06":43.4542,"2026-02-09":43.5182,"2026-02-10":43.545,"2026-02-11":43.5633,"2026-02-12":43.5702,"2026-02-13":43.5433,"2026-02-17":43.6524,"2026-02-18":43.6747,"2026-02-19":43.6913,"2026-02-20":43.6883,"2026-02-23":43.7542,"2026-02-24":43.7775,"2026-02-25":43.7888,"2026-02-26":43.8026,"2026-02-27":43.8,"2026-03-02":43.885,"2026-03-03":43.8913,"2026-03-04":43.8932,"2026-03-05":43.9135,"2026-03-06":43.9055,"2026-03-09":44.0007,"2026-03-10":43.9826,"2026-03-11":43.9964,"2026-03-12":44.031};
@@ -700,15 +736,34 @@ function computeHoldings(){
   Object.keys(map).forEach(function(t){
     var h=map[t];
     if(h.qty>0){
-      h.avgCost=h.qty>0?h.totalCost/h.qty:0; // approximate avg
-      // Recalculate properly: FIFO avg
-      var buys=txData.filter(function(tx){return tx.ticker===t&&tx.side==='buy';});
-      var sells=txData.filter(function(tx){return tx.ticker===t&&tx.side==='sell';});
-      var totalBuyQty=buys.reduce(function(s,b){return s+b.qty;},0);
-      var totalBuyCost=buys.reduce(function(s,b){return s+b.qty*b.price+b.komisyon;},0);
-      var totalSellQty=sells.reduce(function(s,s2){return s+s2.qty;},0);
-      // Weighted avg of remaining
-      h.avgCost=totalBuyQty>0?totalBuyCost/totalBuyQty:0;
+      // FIFO: tarihe göre sırala, satışları en eski lotlardan tüket, kalanın ağırlıklı ortalamasını al
+      var tickerTx=txData.filter(function(tx){return tx.ticker===t;}).slice().sort(function(a,b){
+        return (a.date||'').localeCompare(b.date||'');
+      });
+      var fifoQueue=[]; // {qty, remaining, price, komisyon}
+      tickerTx.forEach(function(tx){
+        if(tx.side==='buy'){
+          fifoQueue.push({qty:tx.qty, remaining:tx.qty, price:tx.price, komisyon:tx.komisyon||0});
+        } else {
+          var toSell=tx.qty;
+          for(var i=0;i<fifoQueue.length&&toSell>0;i++){
+            var lot=fifoQueue[i];
+            if(lot.remaining<=0) continue;
+            var take=Math.min(lot.remaining,toSell);
+            lot.remaining-=take;
+            toSell-=take;
+          }
+        }
+      });
+      var remainingCost=0, remainingQty=0;
+      fifoQueue.forEach(function(lot){
+        if(lot.remaining>0){
+          var proratedKom=lot.qty>0?lot.komisyon*(lot.remaining/lot.qty):0;
+          remainingCost+=lot.remaining*lot.price+proratedKom;
+          remainingQty+=lot.remaining;
+        }
+      });
+      h.avgCost=remainingQty>0?remainingCost/remainingQty:0;
       h.currentPrice=getEffectivePriceForTicker(t,h.avgCost);
       h.marketValue=h.qty*h.currentPrice;
       h.costBasis=h.qty*h.avgCost;
@@ -994,6 +1049,8 @@ function openHolding(ticker){
 
       // BUY TAB
       '<div id="htab-buy-content" style="display:none">' +
+        '<div class="owner-toggle"><button class="ot-btn eda on" id="hb-ot-eda" onclick="setHTxOwner(\'buy\',\'eda\')">Eda</button><button class="ot-btn mus" id="hb-ot-mus" onclick="setHTxOwner(\'buy\',\'mustafa\')">Mustafa</button><button class="ot-btn ays" id="hb-ot-ays" onclick="setHTxOwner(\'buy\',\'ayse\')">Ayşe</button></div>' +
+        '<input type="hidden" id="hb_owner" value="eda">' +
         '<div class="frow"><div><label class="fi-lbl">Adet</label><input id="hb_qty" type="number" class="fi" placeholder="10"></div><div><label class="fi-lbl">Fiyat ($)</label><input id="hb_price" type="number" class="fi" placeholder="' + h.currentPrice.toFixed(2) + '" step="0.01"></div></div>' +
         '<div class="frow"><div><label class="fi-lbl">Komisyon ($)</label><input id="hb_kom" type="number" class="fi" placeholder="0.00" step="0.01"></div><div><label class="fi-lbl">Tarih</label><input id="hb_date" type="date" class="fi"></div></div>' +
         '<button class="btn-buy" data-action="htrade-buy">Alim Kaydet</button>' +
@@ -1001,6 +1058,8 @@ function openHolding(ticker){
 
       // SELL TAB
       '<div id="htab-sell-content" style="display:none">' +
+        '<div class="owner-toggle"><button class="ot-btn eda on" id="hs-ot-eda" onclick="setHTxOwner(\'sell\',\'eda\')">Eda</button><button class="ot-btn mus" id="hs-ot-mus" onclick="setHTxOwner(\'sell\',\'mustafa\')">Mustafa</button><button class="ot-btn ays" id="hs-ot-ays" onclick="setHTxOwner(\'sell\',\'ayse\')">Ayşe</button></div>' +
+        '<input type="hidden" id="hs_owner" value="eda">' +
         '<div style="background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--rose)">Mevcut pozisyon: <strong>' + h.qty + ' adet</strong></div>' +
         '<div class="frow"><div><label class="fi-lbl">Adet</label><input id="hs_qty" type="number" class="fi" placeholder="' + h.qty + '" max="' + h.qty + '"></div><div><label class="fi-lbl">Fiyat ($)</label><input id="hs_price" type="number" class="fi" placeholder="' + h.currentPrice.toFixed(2) + '" step="0.01"></div></div>' +
         '<div class="frow"><div><label class="fi-lbl">Komisyon ($)</label><input id="hs_kom" type="number" class="fi" placeholder="0.00" step="0.01"></div><div><label class="fi-lbl">Tarih</label><input id="hs_date" type="date" class="fi"></div></div>' +
@@ -1068,6 +1127,17 @@ function switchHTab(tab){
   if(activeCon) activeCon.style.display = 'block';
 }
 
+function setHTxOwner(side, owner){
+  var prefix = side==='buy' ? 'hb' : 'hs';
+  var ownerEl = document.getElementById(prefix+'_owner');
+  if(ownerEl) ownerEl.value = owner;
+  var map={eda:'eda',mus:'mustafa',ays:'ayse'};
+  ['eda','mus','ays'].forEach(function(cls){
+    var btn=document.getElementById(prefix+'-ot-'+cls);
+    if(btn) btn.classList.toggle('on', owner===map[cls]);
+  });
+}
+
 function doHoldingTrade(ticker, side){
   var qtyEl  = document.getElementById('h' + side[0] + '_qty');
   var priceEl= document.getElementById('h' + side[0] + '_price');
@@ -1082,6 +1152,7 @@ function doHoldingTrade(ticker, side){
     side: side, qty: qty, price: price,
     komisyon: parseFloat(komEl ? komEl.value : 0) || 0,
     date: dateEl ? dateEl.value : new Date().toISOString().split('T')[0],
+    owner: (document.getElementById('h'+side[0]+'_owner')||{value:'eda'}).value,
     note: ''
   };
   txData.push(tx); saveTx();
@@ -1182,6 +1253,22 @@ function renderPortfolio(){
   var hk=document.getElementById('heroKazanc');
   if(hk){hk.textContent=(totalPnl>=0?'+':'')+fmt$(totalPnl).replace('$','');hk.style.color=totalPnl>=0?'var(--emerald)':'var(--rose)';}
   var hc=document.getElementById('heroCount'); if(hc) hc.textContent=holdings.length;
+
+  // Hero TWR
+  var _n=new Date();
+  var _twrs={
+    MTD: computeModifiedDietz(new Date(_n.getFullYear(),_n.getMonth(),1)),
+    YTD: computeModifiedDietz(new Date(_n.getFullYear(),0,1)),
+    '1Y': computeModifiedDietz(new Date(_n.getFullYear()-1,_n.getMonth(),_n.getDate()))
+  };
+  ['MTD','YTD','1Y'].forEach(function(k){
+    var el=document.getElementById('heroTWR_'+k);
+    if(!el) return;
+    var v=_twrs[k];
+    if(v===null){el.textContent='—';el.style.color='rgba(255,255,255,.4)';return;}
+    el.textContent=(v>=0?'+':'')+v.toFixed(2)+'%';
+    el.style.color=v>=0?'var(--emerald)':'var(--rose)';
+  });
 
   // Sort by daily change % descending (best performers first)
   // Holdings with no dayChange data go to end, sorted by unrealizedPct
@@ -1339,6 +1426,16 @@ function renderDist(){
 
 // ─── TRANSACTIONS ─────────────────────
 var curTxFilter='all';
+function toggleTxOwner(id){
+  var tx=txData.find(function(t){return t.id===id;});
+  if(!tx) return;
+  var cycle={eda:'mustafa',mustafa:'ayse',ayse:'eda'};
+  tx.owner = cycle[tx.owner||'eda']||'mustafa';
+  saveTx();
+  renderTx(curTxFilter);
+  if(curScreen==='vergi') renderVergi();
+}
+
 function renderTx(filter){
   curTxFilter=filter;
   var all=[...txData].reverse();
@@ -1351,16 +1448,21 @@ function renderTx(filter){
   list.innerHTML=f.map(function(tx){
     var c=tickerColor(tx.ticker);
     var total=tx.qty*tx.price+(tx.side==='buy'?tx.komisyon:-tx.komisyon);
+    var owner=tx.owner||'eda';
     return '<div class="txcard">'+
       '<div class="tx-side tx-'+(tx.side)+'">'+( tx.side==='buy'?'AL':'SAT')+'</div>'+
       '<div class="tx-body">'+
-        '<div class="tx-ticker">'+tx.ticker+'<span style="font-size:10px;background:var(--s3);color:var(--ink2);padding:1px 6px;border-radius:5px;margin-left:7px">'+tx.sector+'</span></div>'+
+        '<div class="tx-ticker">'+tx.ticker+
+          '<span style="font-size:10px;background:var(--s3);color:var(--ink2);padding:1px 6px;border-radius:5px;margin-left:7px">'+tx.sector+'</span>'+
+        '</div>'+
         '<div class="tx-meta">'+tx.date+' · '+tx.qty+' adet @ '+fmt$(tx.price)+' · Kom: '+fmt$(tx.komisyon)+'</div>'+
       '</div>'+
-      '<div class="tx-right">'+
+      '<div class="tx-right" style="align-items:flex-end">'+
         '<div class="tx-total" style="color:'+(tx.side==='buy'?'var(--rose)':'var(--emerald)')+'">'+
           (tx.side==='buy'?'-':'+')+fmt$(total)+'</div>'+
-        '<div class="tx-detail">'+tx.qty+' × '+fmt$(tx.price)+'</div>'+
+        '<button class="owner-badge '+(owner==='eda'?'eda':owner==='mustafa'?'mus':'ays')+'" data-txid="'+tx.id+'" onclick="toggleTxOwner('+tx.id+')">'+
+          (owner==='eda'?'EDA':owner==='mustafa'?'MUS':'AYŞ')+
+        '</button>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -1376,6 +1478,17 @@ document.addEventListener('click',function(e){
 });
 
 // ─── VERGİ ────────────────────────────
+var curVergiOwner = 'eda';
+function switchVergiTab(owner){
+  curVergiOwner = owner;
+  var tabs = {eda:['vtab-eda','rgba(56,189,248,.15)','var(--sky)'],mustafa:['vtab-mus','rgba(167,139,250,.15)','var(--violet)'],ayse:['vtab-ays','rgba(52,211,153,.15)','var(--mint)']};
+  Object.keys(tabs).forEach(function(o){
+    var el=document.getElementById(tabs[o][0]);
+    if(el){ el.style.background=owner===o?tabs[o][1]:'transparent'; el.style.color=owner===o?tabs[o][2]:'var(--ink3)'; }
+  });
+  renderVergi();
+}
+
 function renderVergi(){
   var yil=document.getElementById('vergiYil')?document.getElementById('vergiYil').value:'2026';
   // Kişiye göre filtrele
@@ -1582,6 +1695,12 @@ function openAddTrade(){
   m.innerHTML='<div class="sheet">'+
     '<div class="sheet-handle"></div>'+
     '<div class="sheet-title">İşlem Ekle</div>'+
+    '<div class="owner-toggle">'+
+      '<button class="ot-btn eda on" id="ot-eda" onclick="setTxOwner(\'eda\')">Eda</button>'+
+      '<button class="ot-btn mus" id="ot-mus" onclick="setTxOwner(\'mustafa\')">Mustafa</button>'+
+      '<button class="ot-btn ays" id="ot-ays" onclick="setTxOwner(\'ayse\')">Ayşe</button>'+
+    '</div>'+
+    '<input type="hidden" id="tx-owner" value="eda">'+
     '<div class="tab-row">'+
       '<div class="tab-btn on buy" id="tab-buy" onclick="switchTab(\'buy\')">📈 Alım</div>'+
       '<div class="tab-btn sell" id="tab-sell" onclick="switchTab(\'sell\')">📉 Satım</div>'+
@@ -1606,6 +1725,15 @@ function openAddTrade(){
   document.body.appendChild(m);
   m.querySelector('#tx-date').value=new Date().toISOString().split('T')[0];
   m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+}
+
+function setTxOwner(owner){
+  document.getElementById('tx-owner').value=owner;
+  ['eda','mus','ays'].forEach(function(cls){
+    var map={eda:'eda',mus:'mustafa',ays:'ayse'};
+    var btn=document.getElementById('ot-'+cls);
+    if(btn) btn.classList.toggle('on', owner===map[cls]);
+  });
 }
 
 function switchTab(side){
@@ -1636,6 +1764,7 @@ function saveTrade(){
     qty,price,
     komisyon:parseFloat(document.getElementById('tx-kom').value)||0,
     date:document.getElementById('tx-date').value,
+    owner:document.getElementById('tx-owner')?document.getElementById('tx-owner').value:'eda',
     note:''
   };
   var cp=parseFloat(document.getElementById('tx-curprice').value);
@@ -1683,6 +1812,65 @@ function resetAll(){
 }
 
 
+// ─── TIME WEIGHTED RETURN (Modified Dietz) ───────────────────────
+function computeModifiedDietz(periodStart) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var ps = new Date(periodStart); ps.setHours(0,0,0,0);
+  var startStr = ps.toISOString().split('T')[0];
+  var periodDays = (today - ps) / 86400000;
+  if (periodDays <= 0) return null;
+
+  var tickerMap = {};
+  txData.forEach(function(tx) {
+    if (!tickerMap[tx.ticker]) tickerMap[tx.ticker] = { pre: [], during: [] };
+    if (tx.date < startStr) tickerMap[tx.ticker].pre.push(tx);
+    else                    tickerMap[tx.ticker].during.push(tx);
+  });
+
+  var bmv = 0, emv = 0, totalCF = 0, weightedCF = 0;
+
+  Object.keys(tickerMap).forEach(function(ticker) {
+    var d = tickerMap[ticker];
+
+    // Portfolio value at start of period (cost-basis approximation)
+    var qty = 0, cost = 0;
+    d.pre.forEach(function(tx) {
+      if (tx.side === 'buy') {
+        cost += tx.qty * tx.price + (tx.komisyon || 0);
+        qty  += tx.qty;
+      } else if (qty > 0) {
+        var ratio = Math.min(tx.qty / qty, 1);
+        cost = cost * (1 - ratio);
+        qty  = Math.max(0, qty - tx.qty);
+      }
+    });
+    bmv += Math.max(0, qty) * (qty > 0 ? cost / qty : 0);
+
+    // Cash flows during period
+    d.during.forEach(function(tx) {
+      var txDate = new Date(tx.date + 'T00:00:00'); txDate.setHours(0,0,0,0);
+      var elapsed = (txDate - ps) / 86400000;
+      var wi = Math.max(0, (periodDays - elapsed) / periodDays);
+      var cf = tx.side === 'buy'
+        ?  (tx.qty * tx.price + (tx.komisyon || 0))
+        : -(tx.qty * tx.price - (tx.komisyon || 0));
+      totalCF    += cf;
+      weightedCF += wi * cf;
+    });
+
+    // Current market value
+    var currentQty = 0;
+    d.pre.concat(d.during).forEach(function(tx) {
+      currentQty += tx.side === 'buy' ? tx.qty : -tx.qty;
+    });
+    emv += Math.max(0, currentQty) * getEffectivePriceForTicker(ticker, 0);
+  });
+
+  var denom = bmv + weightedCF;
+  if (denom <= 0) return null;
+  return (emv - bmv - totalCF) / denom * 100;
+}
+
 // ─── METRİKLER ───────────────────────
 function renderMetrics(){
   var holdings = computeHoldings();
@@ -1690,6 +1878,12 @@ function renderMetrics(){
   var totalCost= holdings.reduce(function(s,h){return s+h.costBasis;},0);
   var totalPnl = totalMV - totalCost;
   var totalPct = totalCost>0 ? totalPnl/totalCost*100 : 0;
+
+  // TWR dönemleri
+  var _now = new Date();
+  var twrMTD = computeModifiedDietz(new Date(_now.getFullYear(), _now.getMonth(), 1));
+  var twrYTD = computeModifiedDietz(new Date(_now.getFullYear(), 0, 1));
+  var twr1Y  = computeModifiedDietz(new Date(_now.getFullYear()-1, _now.getMonth(), _now.getDate()));
 
   // Concentration risk: top holding weight
   var weights = holdings.map(function(h){ return totalMV>0 ? h.marketValue/totalMV : 0; });
@@ -1752,7 +1946,30 @@ function renderMetrics(){
   else if(hhiPct>10){riskLabel='Orta Konsantrasyon';riskColor='var(--amber)';}
   else{riskLabel='İyi Çeşitlendirilmiş';riskColor='var(--emerald)';}
 
+  function twrCell(label, val) {
+    var na = val === null;
+    var color = na ? 'var(--ink3)' : val >= 0 ? 'var(--emerald)' : 'var(--rose)';
+    var txt   = na ? '—' : (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+    return '<div style="flex:1;text-align:center;padding:14px 8px">'+
+      '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin-bottom:8px">'+label+'</div>'+
+      '<div style="font-size:22px;font-weight:800;font-family:DM Mono,monospace;color:'+color+'">'+txt+'</div>'+
+    '</div>';
+  }
+
   mc.innerHTML =
+    // TWR card
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+      '<div style="padding:12px 16px 0;font-size:11px;font-weight:800;color:var(--ink2);letter-spacing:.3px">⏱ Time Weighted Return</div>'+
+      '<div style="display:flex;gap:0">'+
+        twrCell('MTD', twrMTD)+
+        '<div style="width:1px;background:var(--rim);margin:12px 0"></div>'+
+        twrCell('YTD', twrYTD)+
+        '<div style="width:1px;background:var(--rim);margin:12px 0"></div>'+
+        twrCell('1 Yıl', twr1Y)+
+      '</div>'+
+      '<div style="padding:6px 16px 10px;font-size:9px;color:var(--ink3)">Modified Dietz yöntemi · Nakit akışı ağırlıklı</div>'+
+    '</div>'+
+
     // Summary grid
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px">'+
       mCard('Toplam Getiri', (totalPct>=0?'+':'')+totalPct.toFixed(2)+'%', fmt$(totalPnl), totalPnl>=0?'var(--emerald)':'var(--rose)')+
