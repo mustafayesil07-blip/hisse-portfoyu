@@ -533,6 +533,21 @@ body{
     <div id="kurListesi" class="kur-list"></div>
   </div>
 
+  <div style="padding:0 20px 8px;margin-top:4px">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">📈 YİÜFE Endeksi (Endeksleme)</div>
+  </div>
+  <div class="kur-box">
+    <div style="font-size:10px;color:var(--ink3);margin-bottom:10px;line-height:1.6">
+      <strong style="color:var(--amber)">GVK 81/3</strong> — Alım ayının bir önceki ayı ile satış ayının bir önceki ayı arasında YİÜFE artışı <strong style="color:var(--amber)">%10'u aşarsa</strong> alış maliyeti endekslenerek matrah düşürülür. Oran: satış öncesi ay ÷ alım öncesi ay.
+    </div>
+    <div class="kur-add" style="grid-template-columns:1fr 1fr auto">
+      <div><label class="fi-lbl" style="margin-bottom:5px;display:block">Ay (YYYY-AA)</label><input type="month" id="yufeTarih" class="fi"></div>
+      <div><label class="fi-lbl" style="margin-bottom:5px;display:block">Endeks Değeri</label><input type="number" id="yufeValue" placeholder="örn: 3412.75" step="0.01" class="fi"></div>
+      <button onclick="yufeEkle()" style="background:var(--amber);border:none;border-radius:10px;padding:0 14px;height:42px;color:#000;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;align-self:flex-end;white-space:nowrap">+ Ekle</button>
+    </div>
+    <div id="yufeListesi" class="kur-list"></div>
+  </div>
+
   <div style="padding:0 20px 8px">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">📋 İşlem Bazlı Vergi Tablosu</div>
   </div>
@@ -641,6 +656,12 @@ try { var _dc=localStorage.getItem(LS_DAYCHANGE); if(_dc) dayChange=JSON.parse(_
 // Ticker notes
 var tickerNotes = {};
 try { var _n=localStorage.getItem(LS_NOTES); if(_n) tickerNotes=JSON.parse(_n); } catch(e){}
+
+// YİÜFE aylık endeks verisi: { 'YYYY-MM': value }
+var LS_YUFE = 'portfolio_yufe_v1';
+var yufeData = {};
+try { var _yf=localStorage.getItem(LS_YUFE); if(_yf) yufeData=JSON.parse(_yf); } catch(e){}
+function saveYufe(){ try{localStorage.setItem(LS_YUFE,JSON.stringify(yufeData));}catch(e){} }
 
 // Manuel vergi matrah overrides: { txId: tryValue } (endeksleme için)
 var vergiOverride = {};
@@ -1534,13 +1555,25 @@ function renderVergi(){
       if(!inPeriod) return;
 
       // Her tüketilen lotun TRY maliyeti kendi alış tarihinin kuru ile
+      // YİÜFE endeksleme: artış >%10 ise o lotun maliyeti × (kapanış öncesi ay / alış öncesi ay)
+      var yufeApplied=false; var yufeRatios=[];
       var totalBuyTRY=consumed.reduce(function(s,lot){
         var kur=getKur(lot.date)||0;
         if(kur===0) return s;
         var pk=lot.lotQty>0?lot.komisyon*(lot.qty/lot.lotQty):0;
-        return s+(lot.qty*lot.price+pk)*kur;
+        var baseCost=(lot.qty*lot.price+pk)*kur;
+        // YİÜFE hesapla
+        var yIdx=calcLotYufe(lot.date,tx.date);
+        if(yIdx.eligible){
+          baseCost=baseCost*yIdx.ratio;
+          yufeApplied=true;
+          yufeRatios.push(yIdx.ratio);
+        }
+        return s+baseCost;
       },0);
       var missingBuyKur=consumed.some(function(lot){return (getKur(lot.date)||0)===0;});
+      // Ortalama endeksleme oranı (gösterim için)
+      var yufeAvgRatio=yufeRatios.length>0?yufeRatios.reduce(function(a,b){return a+b;},0)/yufeRatios.length:null;
 
       var sellKur=getKur(tx.date)||0;
       var sellRevenueTRY=sellKur>0?(tx.qty*tx.price-tx.komisyon)*sellKur:null;
@@ -1559,7 +1592,8 @@ function renderVergi(){
         avgCostTRY:tx.qty>0?totalBuyTRY/tx.qty:0,
         pnlUSD:pnlUSD, sellKur:sellKur,
         matrahTRY:matrahTRY, buyKomisyon:buyKomisyon,
-        missingBuyKur:missingBuyKur, kur:sellKur
+        missingBuyKur:missingBuyKur, kur:sellKur,
+        yufeApplied:yufeApplied, yufeAvgRatio:yufeAvgRatio
       });
     });
   });
@@ -1590,8 +1624,9 @@ function renderVergi(){
     return '<div class="vh-card"><div class="vh-lbl">'+x.l+'</div><div class="vh-val" style="color:'+x.c+'">'+x.v+'</div></div>';
   }).join('');
 
-  // Kur listesi
+  // Kur ve YİÜFE listeleri
   renderKurListesi();
+  renderYufeListesi();
 
   // Vergi tablosu
   var vt=document.getElementById('vergiTablosu');
@@ -1611,10 +1646,14 @@ function renderVergi(){
     var editBtn='<button onclick="vergiOvrEdit('+s.id+')" style="background:none;border:none;cursor:pointer;font-size:10px;padding:0 2px;opacity:.45;vertical-align:middle" title="Manuel matrah gir (endeksleme)">✏️</button>';
     // Clear butonu (sadece override varsa)
     var clearBtn=hasOvr?'<button onclick="vergiOvrClear('+s.id+')" style="background:none;border:none;cursor:pointer;font-size:13px;line-height:1;padding:0 1px;color:var(--ink3);vertical-align:middle" title="Hesaplananı kullan ('+calcTxt+')">×</button>':'';
+    // YİÜFE rozeti (endeksleme uygulandıysa)
+    var yufeBadge=(!hasOvr&&r.yufeApplied&&r.yufeAvgRatio)
+      ?'<span style="font-size:8px;background:rgba(52,211,153,.15);color:var(--mint);border-radius:3px;padding:0 3px;margin-left:2px;vertical-align:middle" title="YİÜFE endeksleme uygulandı (×'+r.yufeAvgRatio.toFixed(4)+')">YE×'+r.yufeAvgRatio.toFixed(3)+'</span>'
+      :'';
     // Matrah hücresi içeriği
     var matrahInner=r.missingBuyKur&&!hasOvr
       ?'<span style="color:var(--amber)" title="Bazı alış günleri kur eksik — manuel girerek düzeltebilirsin">⚠ '+mt+'</span>'+editBtn
-      :mt+manBadge+editBtn+clearBtn;
+      :mt+yufeBadge+manBadge+editBtn+clearBtn;
     return '<div class="vt-row">'+
       '<div>'+
         '<div style="font-size:12px;font-weight:700;color:'+c+'">'+s.ticker+'</div>'+
@@ -1629,6 +1668,68 @@ function renderVergi(){
       '<div class="vm" style="font-weight:700;color:'+mc+'">'+matrahInner+'</div>'+
     '</div>';
   }).join('')||'<div class="empty" style="padding:16px">Bu yılda satış işlemi yok</div>';
+}
+
+// ── YİÜFE endeksleme yardımcıları ────────────────────────────────────
+// Bir tarih string'i ('YYYY-MM-DD') için bir önceki ay anahtarını döner ('YYYY-MM')
+function yufePrevMonthKey(dateStr){
+  if(!dateStr) return null;
+  var p=dateStr.split('-'); if(p.length<2) return null;
+  var yr=parseInt(p[0]), mo=parseInt(p[1]);
+  mo--; if(mo<1){mo=12;yr--;}
+  return yr+'-'+(mo<10?'0':'')+mo;
+}
+
+// Bir alım lotu için YİÜFE endeksleme oranını hesaplar
+// buyDate: lotun alım tarihi, sellDate: satış tarihi
+// Döner: { eligible:bool, ratio:number, increase:number, openKey, closeKey }
+function calcLotYufe(buyDate, sellDate){
+  var openKey=yufePrevMonthKey(buyDate);
+  var closeKey=yufePrevMonthKey(sellDate);
+  if(!openKey||!closeKey) return {eligible:false,reason:'tarih eksik'};
+  var openIdx=yufeData[openKey];
+  var closeIdx=yufeData[closeKey];
+  if(!openIdx) return {eligible:false,reason:'alım öncesi ay endeksi eksik ('+openKey+')',openKey:openKey,closeKey:closeKey};
+  if(!closeIdx) return {eligible:false,reason:'satış öncesi ay endeksi eksik ('+closeKey+')',openKey:openKey,closeKey:closeKey};
+  var ratio=closeIdx/openIdx;
+  var increase=(ratio-1)*100;
+  if(increase<=10) return {eligible:false,reason:'artış %'+increase.toFixed(1)+' ≤ %10',ratio:ratio,increase:increase,openKey:openKey,closeKey:closeKey,openIdx:openIdx,closeIdx:closeIdx};
+  return {eligible:true,ratio:ratio,increase:increase,openKey:openKey,closeKey:closeKey,openIdx:openIdx,closeIdx:closeIdx};
+}
+
+function yufeEkle(){
+  var t=document.getElementById('yufeTarih').value; // YYYY-MM
+  var v=parseFloat(document.getElementById('yufeValue').value);
+  if(!t){alert('Ay seçin');return;}
+  if(!v||v<=0){alert('Geçerli bir endeks değeri girin');return;}
+  yufeData[t]=Math.round(v*100)/100;
+  saveYufe();
+  document.getElementById('yufeValue').value='';
+  renderYufeListesi();
+  renderVergi();
+}
+function yufeSil(key){
+  delete yufeData[key];
+  saveYufe();
+  renderYufeListesi();
+  renderVergi();
+}
+function renderYufeListesi(){
+  var el=document.getElementById('yufeListesi'); if(!el) return;
+  var keys=Object.keys(yufeData).sort().reverse();
+  if(!keys.length){
+    el.innerHTML='<div style="color:var(--ink3);font-size:12px;text-align:center;padding:8px">Henüz endeks girilmedi</div>';
+    return;
+  }
+  el.innerHTML=keys.slice(0,24).map(function(k){
+    return '<div class="kur-row">'+
+      '<span class="kd">'+k+'</span>'+
+      '<div style="display:flex;align-items:center;gap:9px">'+
+        '<span class="kr" style="color:var(--amber)">'+parseFloat(yufeData[k]).toFixed(2)+'</span>'+
+        '<span class="kdel" onclick="yufeSil(this.dataset.k)" data-k="'+k+'">Sil</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
 }
 
 // ── Manuel vergi matrah override (endeksleme) ────────────────────────
