@@ -333,8 +333,8 @@ body{
 .kdel{font-size:10px;color:var(--rose);cursor:pointer;padding:3px 8px;background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:6px;font-weight:700}
 
 .vtable{margin:0 20px 12px;background:var(--s1);border:1px solid var(--rim);border-radius:var(--r);overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.vt-head{display:grid;grid-template-columns:1fr 40px 60px 60px 70px 70px 85px;min-width:620px;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--rim);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);gap:4px}
-.vt-row{display:grid;grid-template-columns:1fr 40px 60px 60px 70px 70px 85px;min-width:620px;padding:11px 14px;border-bottom:1px solid var(--rim);gap:4px;align-items:center}
+.vt-head{display:grid;grid-template-columns:150px 46px 78px 78px 62px 62px 74px 74px 120px;min-width:800px;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--rim);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);gap:4px}
+.vt-row{display:grid;grid-template-columns:150px 46px 78px 78px 62px 62px 74px 74px 120px;min-width:800px;padding:11px 14px;border-bottom:1px solid var(--rim);gap:4px;align-items:center}
 .vt-row:last-child{border-bottom:none}
 .vm{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
 .vtype{font-size:9px;padding:3px 6px;border-radius:5px;font-weight:700;text-align:center}
@@ -551,8 +551,8 @@ body{
   <div style="padding:0 20px 8px">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)">📋 İşlem Bazlı Vergi Tablosu</div>
   </div>
-  <div class="vtable"><div style="min-width:560px">
-    <div class="vt-head"><div>Hisse / Tarih</div><div>Adet</div><div>Sat.$</div><div>Al.Ort.$</div><div>P&L($)</div><div>Kur(₺)</div><div>Matrah(₺)</div></div>
+  <div class="vtable"><div style="min-width:800px">
+    <div class="vt-head"><div>İşlem</div><div>Adet</div><div>Alış $</div><div>Satış $</div><div>Al.Kom</div><div>Sat.Kom</div><div>Alış Kuru</div><div>Satış Kuru</div><div>Matrah ₺ ✏️</div></div>
     <div id="vergiTablosu"></div>
   </div></div>
 </div>
@@ -1616,6 +1616,20 @@ function renderVergi(){
       var matrahTRY=(sellRevenueTRY!==null&&!missingBuyKur&&totalBuyTRY>0)
         ?sellRevenueTRY-totalBuyTRY:null;
 
+      // Tablo icin: alis tarih araligi, agirlikli alis kuru, tutarlar
+      var buyDates=[];
+      consumed.forEach(function(l){ if(buyDates.indexOf(l.date)<0) buyDates.push(l.date); });
+      buyDates.sort();
+      var _w=0,_wk=0;
+      consumed.forEach(function(l){
+        var k=getKur(l.date)||0; var v=l.qty*l.price;
+        if(k>0){ _w+=v; _wk+=v*k; }
+      });
+      var buyRate=_w>0?_wk/_w:0;
+      var buyUSD=consumed.reduce(function(s,l){
+        return s+l.qty*l.price+(l.lotQty>0?l.komisyon*(l.qty/l.lotQty):0); },0);
+      var sellUSD=tx.qty*tx.price-tx.komisyon;
+
       var avgCostUSD=consumed.length>0
         ?consumed.reduce(function(s,lot){return s+lot.qty*lot.price;},0)/tx.qty:0;
       var pnlUSD=(tx.qty*tx.price-tx.komisyon)-tx.qty*avgCostUSD;
@@ -1630,7 +1644,8 @@ function renderVergi(){
         matrahTRY:matrahTRY, buyKomisyon:buyKomisyon,
         missingBuyKur:missingBuyKur, kur:sellKur,
         yufeApplied:yufeApplied, yufeAvgRatio:yufeAvgRatio,
-        lotSecimi:lotSecimi
+        lotSecimi:lotSecimi,
+        buyDates:buyDates, buyRate:buyRate, buyUSD:buyUSD, sellUSD:sellUSD
       });
     });
   });
@@ -1695,17 +1710,23 @@ function renderVergi(){
     var lotBadge=r.lotSecimi
       ?'<span style="font-size:8px;background:rgba(167,139,250,.18);color:var(--violet);border-radius:3px;padding:0 3px;margin-left:4px;vertical-align:middle" title="Satışta elle lot seçimi yapıldı (FIFO değil)">LOT</span>'
       :'';
+    // Alış tarih aralığı (tüketilen lotlar)
+    var bd=r.buyDates||[];
+    var bdTxt=bd.length===0?'—':(bd.length===1?bd[0]:bd[0]+' … '+bd[bd.length-1]);
+    var bdTitle=bd.length>1?' title="Tüketilen '+bd.length+' lot: '+bd.join(', ')+'"':'';
     return '<div class="vt-row">'+
-      '<div>'+
+      '<div style="min-width:0">'+
         '<div style="font-size:12px;font-weight:700;color:'+c+'">'+s.ticker+lotBadge+'</div>'+
-        '<div style="font-size:10px;color:var(--ink3)">'+s.date+'</div>'+
-        '<div style="font-size:9px;color:var(--ink3)">kom: '+fmt$(totalKom)+'</div>'+
+        '<div style="font-size:9px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"'+bdTitle+'>'+bdTxt+'</div>'+
+        '<div style="font-size:9px;color:var(--ink2)">→ '+s.date+'</div>'+
       '</div>'+
       '<div class="vm">'+s.qty+'</div>'+
-      '<div class="vm">'+s.price.toFixed(2)+'</div>'+
-      '<div class="vm">'+r.avgCostUSD.toFixed(2)+'</div>'+
-      '<div class="vm" style="color:'+pnlColor+'">'+fmt$(r.pnlUSD)+'</div>'+
-      '<div class="vm" style="color:var(--amber)">'+(r.sellKur>0?r.sellKur.toFixed(4):'<span style="color:var(--amber)">—</span>')+'</div>'+
+      '<div class="vm" style="color:var(--ink2)">'+fmt$(r.buyUSD||0)+'</div>'+
+      '<div class="vm" style="color:'+pnlColor+'">'+fmt$(r.sellUSD||0)+'</div>'+
+      '<div class="vm" style="font-size:10px;color:var(--ink3)">'+fmt$(r.buyKomisyon||0)+'</div>'+
+      '<div class="vm" style="font-size:10px;color:var(--ink3)">'+fmt$(s.komisyon||0)+'</div>'+
+      '<div class="vm" style="color:var(--amber)">'+((r.buyRate>0)?r.buyRate.toFixed(4):'—')+'</div>'+
+      '<div class="vm" style="color:var(--amber)">'+((r.sellKur>0)?r.sellKur.toFixed(4):'—')+'</div>'+
       '<div class="vm" style="font-weight:700;color:'+mc+'">'+matrahInner+'</div>'+
     '</div>';
   }).join('')||'<div class="empty" style="padding:16px">Bu yılda satış işlemi yok</div>';
