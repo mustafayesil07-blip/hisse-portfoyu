@@ -1,4 +1,4 @@
-const CACHE = 'portfoy-v5';
+const CACHE = 'portfoy-v6';
 
 // Scope-relative — GitHub Pages /hisse-portfoyu/ veya root'ta doğru çalışır
 const CORE = ['./'];
