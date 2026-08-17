@@ -12,9 +12,30 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <script>
-  if('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js', {scope: '/'});
-  }
+window.APP_VERSION = '2026.08.17-1';
+(function(){
+  if(!('serviceWorker' in navigator)) return;
+
+  // updateViaCache:'none' → tarayici sw.js'i kendi HTTP cache'inden vermez,
+  // her zaman sunucudan taze ceker. Bu olmadan telefon yeni surumu hic gormuyor.
+  navigator.serviceWorker.register('sw.js', {scope: './', updateViaCache: 'none'})
+    .then(function(reg){
+      reg.update();                                   // acilista guncelleme ara
+      setInterval(function(){ reg.update(); }, 60000); // dakikada bir kontrol
+      document.addEventListener('visibilitychange', function(){
+        if(!document.hidden) reg.update();             // uygulamaya donunce kontrol
+      });
+    })
+    .catch(function(){});
+
+  // Yeni service worker devrali nca sayfayi bir kez yenile
+  var reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -555,6 +576,11 @@ body{
     <div class="vt-head"><div>İşlem</div><div>Adet</div><div>Alış $</div><div>Satış $</div><div>Al.Kom</div><div>Sat.Kom</div><div>Alış Kuru</div><div>Satış Kuru</div><div>Matrah ₺ ✏️</div></div>
     <div id="vergiTablosu"></div>
   </div></div>
+
+  <div style="padding:14px 20px 24px;text-align:center">
+    <div style="font-size:10px;color:var(--ink3)">Sürüm <span id="appVer">—</span></div>
+    <button onclick="forceUpdate()" style="margin-top:8px;background:rgba(255,255,255,.06);border:1px solid var(--rim);border-radius:9px;padding:8px 16px;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer">🔄 Guncellemeyi zorla</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════
@@ -1676,6 +1702,9 @@ function renderVergi(){
     return '<div class="vh-card"><div class="vh-lbl">'+x.l+'</div><div class="vh-val" style="color:'+x.c+'">'+x.v+'</div></div>';
   }).join('');
 
+  var _av=document.getElementById("appVer");
+  if(_av) _av.textContent=window.APP_VERSION||"?";
+
   // Kur ve YİÜFE listeleri
   renderKurListesi();
   renderYufeListesi();
@@ -1823,6 +1852,25 @@ function vergiOvrClear(id){
   delete vergiOverride[id];
   saveVergiOverride();
   renderVergi();
+}
+
+// ── Guncellemeyi zorla: SW kaydini ve tum cache'leri sil, yeniden yukle ──
+function forceUpdate(){
+  if(!confirm('Uygulama en guncel surume yenilenecek.\n\nIslemlerin, kurlarin ve YI-UFE degerlerin korunur.\n\nDevam?')) return;
+  var jobs=[];
+  if(window.caches && caches.keys){
+    jobs.push(caches.keys().then(function(ks){
+      return Promise.all(ks.map(function(k){ return caches.delete(k); }));
+    }));
+  }
+  if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+    jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){
+      return Promise.all(rs.map(function(r){ return r.unregister(); }));
+    }));
+  }
+  Promise.all(jobs).catch(function(){}).then(function(){
+    location.replace(location.pathname + '?v=' + Date.now());
+  });
 }
 
 function renderKurListesi(){
