@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <script>
-window.APP_VERSION = '2026.08.17-1';
+window.APP_VERSION = '2026.08.18-1';
 (function(){
   if(!('serviceWorker' in navigator)) return;
 
@@ -45,8 +45,8 @@ window.APP_VERSION = '2026.08.17-1';
 html{font-size:16px;height:100%}
 body{
   font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-  background:#1A1714;
-  color:#E8EAF0;
+  background:var(--bg);
+  color:var(--ink);
   min-height:100vh;overflow-x:hidden;
   padding-bottom:76px;
   -webkit-font-smoothing:antialiased;
@@ -54,36 +54,47 @@ body{
 
 /* ── TOKENS ───────────────────────────── */
 :root{
-  --bg:      #1A1714;
-  --s1:      #232019;
-  --s2:      #2C2820;
-  --s3:      #363028;
-  --rim:     rgba(255,255,255,0.08);
-  --rim2:    rgba(255,255,255,0.14);
-  --ink:     #F0EDE6;
-  --ink2:    #9A9186;
-  --ink3:    #5A5248;
-  --nav-h:   66px;
+  /* yuzeyler — yumusak notr, hafif serin */
+  --bg:      #F5F6F8;
+  --s1:      #FFFFFF;
+  --s2:      #F0F2F5;
+  --s3:      #E6E9EE;
+  --fill:    rgba(15,23,42,0.035);
+  --fill2:   rgba(15,23,42,0.055);
+  --rim:     rgba(15,23,42,0.08);
+  --rim2:    rgba(15,23,42,0.14);
+
+  /* metin */
+  --ink:     #0F172A;
+  --ink2:    #64748B;
+  --ink3:    #94A3B8;
+
+  /* golgeler — katmanli, yumusak */
+  --sh1: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+  --sh2: 0 2px 4px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.07);
+  --sh3: 0 8px 28px rgba(15,23,42,.10);
+
+  --nav-h:   68px;
   --r:       18px;
   --r-sm:    12px;
 
-  /* vivid palette */
-  --emerald: #10D48E;
-  --emerald-bg: rgba(16,212,142,0.10);
-  --rose:    #FF4F7B;
-  --rose-bg: rgba(255,79,123,0.10);
-  --amber:   #FFB020;
-  --amber-bg:rgba(255,176,32,0.10);
-  --sky:     #38BDF8;
-  --sky-bg:  rgba(56,189,248,0.10);
-  --violet:  #A78BFA;
-  --violet-bg:rgba(167,139,250,0.10);
-  --coral:   #FF7043;
-  --coral-bg:rgba(255,112,67,0.10);
-  --mint:    #34D399;
-  --mint-bg: rgba(52,211,153,0.10);
-  --pink:    #F472B6;
-  --pink-bg: rgba(244,114,182,0.10);
+  /* aksan renkleri — acik zeminde okunakli tonlar */
+  --emerald: #059669;
+  --emerald-bg: rgba(5,150,105,0.10);
+  --rose:    #E11D48;
+  --rose-bg: rgba(225,29,72,0.10);
+  --amber:   #D97706;
+  --amber-bg:rgba(217,119,6,0.11);
+  --sky:     #0284C7;
+  --sky-bg:  rgba(2,132,199,0.10);
+  --violet:  #7C3AED;
+  --violet-bg:rgba(124,58,237,0.10);
+  --coral:   #EA580C;
+  --coral-bg:rgba(234,88,12,0.10);
+  --mint:    #0D9488;
+  --mint-bg: rgba(13,148,136,0.10);
+  --pink:    #DB2777;
+  --pink-bg: rgba(219,39,119,0.10);
 }
 
 /* ── ANIMATIONS ───────────────────────── */
@@ -106,7 +117,7 @@ body{
   position:sticky;top:0;z-index:80;
   height:54px;display:flex;align-items:center;justify-content:space-between;
   padding:0 20px;
-  background:rgba(26,23,20,0.94);
+  background:rgba(255,255,255,0.82);
   backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
   border-bottom:1px solid var(--rim);
 }
@@ -116,7 +127,7 @@ body{
   background:linear-gradient(135deg,var(--emerald),var(--sky));
   display:flex;align-items:center;justify-content:center;
   font-size:14px;font-weight:700;color:#fff;
-  box-shadow:0 0 16px rgba(16,212,142,0.30);
+  box-shadow:0 2px 8px rgba(5,150,105,0.28);
 }
 .bar-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.2px}
 .bar-right{display:flex;align-items:center;gap:8px}
@@ -126,7 +137,7 @@ body{
 .nav{
   position:fixed;bottom:0;left:0;right:0;z-index:80;
   height:var(--nav-h);display:flex;align-items:center;
-  background:rgba(26,23,20,0.97);
+  background:rgba(255,255,255,0.88);
   backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
   border-top:1px solid var(--rim);
   padding:0 4px 8px;
@@ -148,7 +159,7 @@ body{
   position:absolute;top:0;left:50%;transform:translateX(-50%);
   width:18px;height:2px;background:var(--emerald);border-radius:0 0 3px 3px;
   opacity:0;transition:opacity .15s;
-  box-shadow:0 0 8px var(--emerald);
+  box-shadow:none;
 }
 .ntab.on .nbar{opacity:1}
 
@@ -157,7 +168,7 @@ body{
   position:fixed;bottom:calc(var(--nav-h)+14px);right:18px;
   width:44px;height:44px;border-radius:14px;
   background:linear-gradient(135deg,var(--emerald),var(--sky));
-  box-shadow:0 0 20px rgba(16,212,142,0.40),0 4px 12px rgba(0,0,0,.4);
+  box-shadow:0 4px 14px rgba(5,150,105,0.32),0 2px 6px rgba(15,23,42,.12);
   display:flex;align-items:center;justify-content:center;
   font-size:22px;color:#fff;cursor:pointer;z-index:70;font-weight:300;
   transition:transform .15s,box-shadow .15s;
@@ -171,7 +182,7 @@ body{
 .sh-btn{
   font-size:12px;color:var(--emerald);font-weight:600;
   padding:7px 15px;background:var(--emerald-bg);
-  border:1px solid rgba(16,212,142,0.22);border-radius:20px;cursor:pointer;
+  border:1px solid rgba(5,150,105,0.22);border-radius:20px;cursor:pointer;
 }
 
 /* ── BADGES ───────────────────────────── */
@@ -180,10 +191,10 @@ body{
   font-size:11px;font-weight:700;letter-spacing:.1px;
   padding:3px 9px;border-radius:20px;
 }
-.b-up  {background:var(--emerald-bg);color:var(--emerald);border:1px solid rgba(16,212,142,.22)}
-.b-dn  {background:var(--rose-bg);   color:var(--rose);   border:1px solid rgba(255,79,123,.22)}
-.b-am  {background:var(--amber-bg);  color:var(--amber);  border:1px solid rgba(255,176,32,.22)}
-.b-sky {background:var(--sky-bg);    color:var(--sky);    border:1px solid rgba(56,189,248,.22)}
+.b-up  {background:var(--emerald-bg);color:var(--emerald);border:1px solid rgba(5,150,105,.22)}
+.b-dn  {background:var(--rose-bg);   color:var(--rose);   border:1px solid rgba(225,29,72,.22)}
+.b-am  {background:var(--amber-bg);  color:var(--amber);  border:1px solid rgba(217,119,6,.22)}
+.b-sky {background:var(--sky-bg);    color:var(--sky);    border:1px solid rgba(2,132,199,.22)}
 
 /* ── FILTER PILLS ─────────────────────── */
 .fp{padding:6px 20px 8px;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none}
@@ -194,7 +205,7 @@ body{
   background:var(--s1);border:1px solid var(--rim);
   color:var(--ink2);cursor:pointer;white-space:nowrap;transition:all .15s;
 }
-.fpb.on{background:var(--emerald-bg);border-color:rgba(16,212,142,.25);color:var(--emerald)}
+.fpb.on{background:var(--emerald-bg);border-color:rgba(5,150,105,.25);color:var(--emerald)}
 .fpb:active{transform:scale(.93)}
 
 /* ═══════════════════════════════════════
@@ -204,30 +215,30 @@ body{
 /* hero card */
 .hero{
   margin:12px 20px;
-  background:linear-gradient(135deg,#2E2418 0%,#3A2E1C 50%,#2E2820 100%);
-  border:1px solid rgba(255,176,32,0.15);
+  background:linear-gradient(140deg,#1E293B 0%,#0F172A 55%,#131C2E 100%);
+  border:1px solid rgba(255,255,255,0.07);
   border-radius:22px;padding:22px 22px 20px;
   position:relative;overflow:hidden;
-  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  box-shadow:0 10px 30px rgba(15,23,42,.16);
 }
 .hero::before{
   content:'';position:absolute;top:-60px;right:-60px;
   width:200px;height:200px;
-  background:radial-gradient(circle,rgba(255,176,32,0.12),transparent 70%);
+  background:radial-gradient(circle,rgba(217,119,6,0.12),transparent 70%);
   pointer-events:none;
 }
 .hero::after{
   content:'';position:absolute;bottom:-40px;left:-40px;
   width:150px;height:150px;
-  background:radial-gradient(circle,rgba(255,112,67,0.08),transparent 70%);
+  background:radial-gradient(circle,rgba(234,88,12,0.08),transparent 70%);
   pointer-events:none;
 }
 .hero-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.45);margin-bottom:10px}
 .hero-val{font-size:38px;font-weight:700;letter-spacing:-.8px;color:#fff;line-height:1}
 .hero-row{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
 .hero-sub{font-size:12px;color:rgba(255,255,255,.5)}
-.hero-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(255,255,255,.07);border-radius:14px;overflow:hidden;margin-top:18px}
-.hs-item{background:rgba(255,255,255,.04);padding:12px 14px}
+.hero-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(255,255,255,.10);border-radius:14px;overflow:hidden;margin-top:18px}
+.hs-item{background:rgba(255,255,255,.05);padding:12px 14px}
 .hs-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:6px}
 .hs-val{font-size:16px;font-weight:700;color:#fff;font-family:'DM Mono',monospace;letter-spacing:-.2px}
 
@@ -236,7 +247,7 @@ body{
 .hcard{
   background:var(--s1);border:1px solid var(--rim);
   border-radius:var(--r);overflow:hidden;
-  box-shadow:0 2px 12px rgba(0,0,0,.25);
+  box-shadow:var(--sh2);
   transition:border-color .15s;
 }
 .hcard:active{border-color:var(--rim2)}
@@ -258,7 +269,7 @@ body{
 .hc-m-val{font-size:13px;font-weight:600;margin-top:3px;color:var(--ink);font-family:'DM Mono',monospace}
 .hc-bar-wrap{padding:0 16px 13px}
 .hc-bar-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-bottom:5px;font-weight:500}
-.hc-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.hc-bar{height:4px;background:var(--fill2);border-radius:2px;overflow:hidden}
 .hc-bar-fill{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.16,1,.3,1)}
 
 /* ═══════════════════════════════════════
@@ -266,7 +277,7 @@ body{
 ═══════════════════════════════════════ */
 .dist-hero{
   margin:12px 20px;background:var(--s1);border:1px solid var(--rim);
-  border-radius:var(--r);padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.3);
+  border-radius:var(--r);padding:20px;box-shadow:var(--sh2);
 }
 .dh-chart-wrap{display:flex;align-items:center;gap:20px}
 .dh-canvas{width:130px!important;height:130px!important;flex-shrink:0}
@@ -280,12 +291,12 @@ body{
 .sec-card{
   background:var(--s1);border:1px solid var(--rim);
   border-radius:var(--r-sm);padding:14px 16px;
-  box-shadow:0 2px 8px rgba(0,0,0,.2);
+  box-shadow:var(--sh1);
 }
 .sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .sc-name{font-size:13px;font-weight:700;color:var(--ink)}
 .sc-pct{font-size:14px;font-weight:700;font-family:'DM Mono',monospace}
-.sc-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.sc-bar{height:5px;background:var(--fill2);border-radius:3px;overflow:hidden}
 .sc-fill{height:100%;border-radius:3px}
 .sc-tickers{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
 .sc-tag{
@@ -298,21 +309,21 @@ body{
 ═══════════════════════════════════════ */
 .txlist{padding:0 20px;display:flex;flex-direction:column;gap:7px}
 /* ── OWNER TOGGLE ─────────────────────── */
-.owner-toggle{display:flex;gap:3px;background:rgba(255,255,255,.05);padding:3px;border-radius:10px;margin-bottom:14px}
+.owner-toggle{display:flex;gap:3px;background:var(--fill);padding:3px;border-radius:10px;margin-bottom:14px}
 .ot-btn{flex:1;font-size:12px;font-weight:700;padding:7px;border-radius:8px;cursor:pointer;text-align:center;border:none;background:transparent;color:var(--ink3);transition:all .15s;font-family:'DM Sans',sans-serif}
-.ot-btn.eda.on {background:rgba(56,189,248,.15);color:var(--sky)}
-.ot-btn.mus.on {background:rgba(167,139,250,.15);color:var(--violet)}
-.ot-btn.ays.on {background:rgba(52,211,153,.15);color:var(--mint)}
+.ot-btn.eda.on {background:rgba(2,132,199,.15);color:var(--sky)}
+.ot-btn.mus.on {background:rgba(124,58,237,.15);color:var(--violet)}
+.ot-btn.ays.on {background:rgba(13,148,136,.15);color:var(--mint)}
 .owner-badge{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;cursor:pointer;letter-spacing:.3px;flex-shrink:0;border:none;font-family:'DM Sans',sans-serif}
-.owner-badge.eda{background:rgba(56,189,248,.15);color:var(--sky)}
-.owner-badge.mus{background:rgba(167,139,250,.15);color:var(--violet)}
-.owner-badge.ays{background:rgba(52,211,153,.15);color:var(--mint)}
+.owner-badge.eda{background:rgba(2,132,199,.15);color:var(--sky)}
+.owner-badge.mus{background:rgba(124,58,237,.15);color:var(--violet)}
+.owner-badge.ays{background:rgba(13,148,136,.15);color:var(--mint)}
 
 .txcard{
   background:var(--s1);border:1px solid var(--rim);
   border-radius:var(--r-sm);padding:13px 15px;
   display:flex;align-items:center;gap:12px;
-  box-shadow:0 2px 8px rgba(0,0,0,.2);transition:border-color .15s;
+  box-shadow:var(--sh1);transition:border-color .15s;
 }
 .txcard:active{border-color:var(--rim2)}
 .tx-side{
@@ -334,16 +345,16 @@ body{
 ═══════════════════════════════════════ */
 .vergi-hero{
   margin:12px 20px;
-  background:linear-gradient(135deg,#2E2A1E,#3A2E1C);
-  border:1px solid rgba(255,176,32,0.15);border-radius:var(--r);
-  padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.3);
+  background:linear-gradient(140deg,#1E293B,#0F172A);
+  border:1px solid rgba(255,255,255,0.07);border-radius:var(--r);
+  padding:20px;box-shadow:0 10px 30px rgba(15,23,42,.16);
 }
 .vh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-.vh-card{background:rgba(255,255,255,.05);border-radius:12px;padding:14px}
+.vh-card{background:rgba(255,255,255,.06);border-radius:12px;padding:14px}
 .vh-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.4);margin-bottom:7px}
 .vh-val{font-size:18px;font-weight:700;color:#fff;font-family:'DM Mono',monospace;letter-spacing:-.2px}
 
-.kur-box{margin:0 20px 12px;background:var(--s1);border:1px solid var(--rim);border-radius:var(--r);padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.kur-box{margin:0 20px 12px;background:var(--s1);border:1px solid var(--rim);border-radius:var(--r);padding:16px;box-shadow:var(--sh1)}
 .box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin-bottom:12px}
 .kur-add{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end}
 .kur-list{max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
@@ -351,10 +362,10 @@ body{
 .kur-row:last-child{border-bottom:none}
 .kd{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);font-weight:500}
 .kr{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--amber)}
-.kdel{font-size:10px;color:var(--rose);cursor:pointer;padding:3px 8px;background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:6px;font-weight:700}
+.kdel{font-size:10px;color:var(--rose);cursor:pointer;padding:3px 8px;background:var(--rose-bg);border:1px solid rgba(225,29,72,.2);border-radius:6px;font-weight:700}
 
-.vtable{margin:0 20px 12px;background:var(--s1);border:1px solid var(--rim);border-radius:var(--r);overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.vt-head{display:grid;grid-template-columns:150px 46px 78px 78px 62px 62px 74px 74px 120px;min-width:800px;padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--rim);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);gap:4px}
+.vtable{margin:0 20px 12px;background:var(--s1);border:1px solid var(--rim);border-radius:var(--r);overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:var(--sh1)}
+.vt-head{display:grid;grid-template-columns:150px 46px 78px 78px 62px 62px 74px 74px 120px;min-width:800px;padding:10px 14px;background:var(--fill);border-bottom:1px solid var(--rim);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);gap:4px}
 .vt-row{display:grid;grid-template-columns:150px 46px 78px 78px 62px 62px 74px 74px 120px;min-width:800px;padding:11px 14px;border-bottom:1px solid var(--rim);gap:4px;align-items:center}
 .vt-row:last-child{border-bottom:none}
 .vm{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
@@ -363,29 +374,30 @@ body{
 /* ── MODALS ───────────────────────────── */
 .overlay{
   position:fixed;inset:0;z-index:200;
-  background:rgba(0,0,0,.68);
+  background:rgba(15,23,42,.42);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   display:flex;align-items:flex-end;justify-content:center;
   animation:fade .18s ease;
 }
 .sheet{
   width:100%;max-width:520px;
-  background:#252018;
-  border-radius:20px 20px 0 0;
-  border-top:1px solid var(--rim2);
+  background:var(--s1);
+  border-radius:22px 22px 0 0;
+  border-top:1px solid var(--rim);
+  box-shadow:0 -8px 40px rgba(15,23,42,.16);
   padding:20px 20px 34px;
   animation:slideup .26s cubic-bezier(.16,1,.3,1);
   max-height:88vh;overflow-y:auto;
 }
-.sheet-handle{width:32px;height:3px;background:rgba(255,255,255,.14);border-radius:2px;margin:0 auto 18px}
+.sheet-handle{width:32px;height:3px;background:var(--rim2);border-radius:2px;margin:0 auto 18px}
 .sheet-title{font-size:17px;font-weight:800;margin-bottom:18px;color:var(--ink);letter-spacing:-.3px}
 .fi{
-  background:rgba(255,255,255,.06);border:1px solid var(--rim2);
+  background:var(--s2);border:1px solid var(--rim);
   border-radius:11px;padding:12px 14px;color:var(--ink);
   font-size:14px;font-family:'DM Sans',sans-serif;outline:none;width:100%;
   transition:border-color .15s;
 }
-.fi:focus{border-color:rgba(16,212,142,.4);background:rgba(16,212,142,.04)}
+.fi:focus{border-color:rgba(5,150,105,.4);background:rgba(5,150,105,.04)}
 .fi-lbl{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:5px;display:block}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
 .ffull{margin-bottom:10px}
@@ -393,18 +405,18 @@ body{
   width:100%;background:linear-gradient(135deg,var(--emerald),#0EA870);
   border:none;border-radius:13px;padding:14px;color:#fff;
   font-family:'DM Sans',sans-serif;font-size:15px;font-weight:800;cursor:pointer;
-  margin-top:8px;box-shadow:0 0 20px rgba(16,212,142,.3);transition:all .15s;
+  margin-top:8px;box-shadow:0 0 20px rgba(5,150,105,.3);transition:all .15s;
 }
 .btn-sell{
   width:100%;background:linear-gradient(135deg,var(--rose),#E0356A);
   border:none;border-radius:13px;padding:14px;color:#fff;
   font-family:'DM Sans',sans-serif;font-size:15px;font-weight:800;cursor:pointer;
-  margin-top:8px;box-shadow:0 0 20px rgba(255,79,123,.25);transition:all .15s;
+  margin-top:8px;box-shadow:0 0 20px rgba(225,29,72,.25);transition:all .15s;
 }
 .btn-buy:active,.btn-sell:active{transform:scale(.97);opacity:.9}
 .btn-ghost{width:100%;background:transparent;border:none;padding:12px;color:var(--ink3);font-size:14px;cursor:pointer;margin-top:4px}
 
-.tab-row{display:flex;gap:2px;background:rgba(255,255,255,.05);padding:3px;border-radius:12px;margin-bottom:16px}
+.tab-row{display:flex;gap:2px;background:var(--fill);padding:3px;border-radius:12px;margin-bottom:16px}
 .tab-btn{flex:1;font-size:13px;font-weight:700;padding:9px;border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;color:var(--ink2)}
 .tab-btn.on.buy {background:var(--emerald-bg);color:var(--emerald)}
 .tab-btn.on.sell{background:var(--rose-bg);color:var(--rose)}
@@ -423,8 +435,8 @@ body{
   </div>
   <div class="bar-right">
     <span class="bar-date" id="todayDate"></span>
-    <button id="refreshBtn" onclick="fetchAllPrices()" style="background:rgba(16,212,142,0.12);border:1px solid rgba(16,212,142,0.22);border-radius:8px;padding:5px 12px;color:#10D48E;font-size:11px;font-weight:700;cursor:pointer">Fiyat Guncelle</button>
-    <button onclick="resetAll()" style="background:rgba(255,79,123,0.12);border:1px solid rgba(255,79,123,0.22);border-radius:8px;padding:5px 11px;color:#FF4F7B;font-size:11px;font-weight:700;cursor:pointer">Sifirla</button>
+    <button id="refreshBtn" onclick="fetchAllPrices()" style="background:rgba(5,150,105,0.12);border:1px solid rgba(5,150,105,0.22);border-radius:8px;padding:5px 12px;color:#059669;font-size:11px;font-weight:700;cursor:pointer">Fiyat Guncelle</button>
+    <button onclick="openVeriMenu()" title="Veri yönetimi / Yedek" style="background:var(--s2);border:1px solid var(--rim);border-radius:8px;padding:5px 10px;color:var(--ink2);font-size:13px;font-weight:700;cursor:pointer;line-height:1.2">⋯</button>
   </div>
 </header>
 
@@ -455,17 +467,17 @@ body{
         <div class="hs-val" id="heroCount">—</div>
       </div>
     </div>
-    <div style="display:flex;justify-content:space-around;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)">
+    <div style="display:flex;justify-content:space-around;margin-top:12px;padding-top:12px;border-top:1px solid var(--rim)">
       <div style="text-align:center">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">MTD</div>
         <div id="heroTWR_MTD" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
       </div>
-      <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+      <div style="width:1px;background:var(--rim)"></div>
       <div style="text-align:center">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">YTD</div>
         <div id="heroTWR_YTD" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
       </div>
-      <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+      <div style="width:1px;background:var(--rim)"></div>
       <div style="text-align:center">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.35);margin-bottom:4px">1 Yıl</div>
         <div id="heroTWR_1Y" style="font-size:14px;font-weight:800;font-family:DM Mono,monospace;color:rgba(255,255,255,.4)">—</div>
@@ -529,8 +541,8 @@ body{
     </select>
   </div>
   <div style="padding:0 20px 4px">
-    <div style="display:flex;gap:3px;background:rgba(255,255,255,.05);padding:3px;border-radius:12px">
-      <div id="vtab-eda" onclick="switchVergiTab('eda')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:rgba(56,189,248,.15);color:var(--sky)">Eda</div>
+    <div style="display:flex;gap:3px;background:var(--fill);padding:3px;border-radius:12px">
+      <div id="vtab-eda" onclick="switchVergiTab('eda')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:rgba(2,132,199,.15);color:var(--sky)">Eda</div>
       <div id="vtab-mus" onclick="switchVergiTab('mustafa')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink3)">Mustafa</div>
       <div id="vtab-ays" onclick="switchVergiTab('ayse')" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink3)">Ayşe</div>
     </div>
@@ -579,7 +591,7 @@ body{
 
   <div style="padding:14px 20px 24px;text-align:center">
     <div style="font-size:10px;color:var(--ink3)">Sürüm <span id="appVer">—</span></div>
-    <button onclick="forceUpdate()" style="margin-top:8px;background:rgba(255,255,255,.06);border:1px solid var(--rim);border-radius:9px;padding:8px 16px;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer">🔄 Guncellemeyi zorla</button>
+    <div style="font-size:10px;color:var(--ink3);margin-top:4px">Yedek ve güncelleme için sağ üstteki ⋯ menüsü</div>
   </div>
 </div>
 
@@ -723,17 +735,17 @@ if (!txData.length || localStorage.getItem(LS_SEED_VER) !== CURRENT_SEED_VER) {
 
 // ─── SECTOR COLOR MAP ─────────────────
 var SECTOR_COLORS = {
-  'Teknoloji':    {color:'#38BDF8', bg:'rgba(56,189,248,.12)'},
-  'E-Ticaret':    {color:'#A78BFA', bg:'rgba(167,139,250,.12)'},
-  'Sosyal Medya': {color:'#F472B6', bg:'rgba(244,114,182,.12)'},
-  'Finans':       {color:'#FFB020', bg:'rgba(255,176,32,.12)'},
-  'Sağlık':       {color:'#10D48E', bg:'rgba(16,212,142,.12)'},
-  'Enerji':       {color:'#FF7043', bg:'rgba(255,112,67,.12)'},
-  'Diğer':        {color:'#8892A4', bg:'rgba(136,146,164,.12)'},
+  'Teknoloji':    {color:'#0284C7', bg:'rgba(2,132,199,.12)'},
+  'E-Ticaret':    {color:'#7C3AED', bg:'rgba(124,58,237,.12)'},
+  'Sosyal Medya': {color:'#DB2777', bg:'rgba(219,39,119,.12)'},
+  'Finans':       {color:'#D97706', bg:'rgba(217,119,6,.12)'},
+  'Sağlık':       {color:'#059669', bg:'rgba(5,150,105,.12)'},
+  'Enerji':       {color:'#EA580C', bg:'rgba(234,88,12,.12)'},
+  'Diğer':        {color:'#64748B', bg:'rgba(136,146,164,.12)'},
 };
 var TICKER_PALETTE = [
-  '#10D48E','#38BDF8','#A78BFA','#F472B6','#FFB020',
-  '#FF7043','#34D399','#60A5FA','#E879F9','#FBBF24',
+  '#059669','#0284C7','#7C3AED','#DB2777','#D97706',
+  '#EA580C','#0D9488','#60A5FA','#E879F9','#D97706',
 ];
 var _tickerColors = {};
 function tickerColor(t){
@@ -902,7 +914,7 @@ var PROXY_BASE = 'https://hisse-portfoyu.vercel.app';
 function setBtnState(btn, html, color, disabled) {
   if (!btn) return;
   btn.innerHTML = html;
-  btn.style.color = color || '#10D48E';
+  btn.style.color = color || '#059669';
   btn.disabled    = !!disabled;
   btn.style.opacity = disabled ? '0.65' : '1';
 }
@@ -985,7 +997,7 @@ function fetchAllPrices() {
   if (!holdings.length) return;
   var tickers = holdings.map(function(h) { return h.ticker; });
   var btn = document.getElementById('refreshBtn');
-  setBtnState(btn, '⟳ Güncelleniyor...', '#FFB020', true);
+  setBtnState(btn, '⟳ Güncelleniyor...', '#D97706', true);
   _fetchInProgress = true;
 
   fetchAllQuotes(tickers)
@@ -1027,20 +1039,20 @@ function fetchAllPrices() {
       if (!btn) return;
       var total = tickers.length;
       if (updated === 0) {
-        setBtnState(btn, '✗ Fiyat alınamadı', '#FF4F7B', false);
+        setBtnState(btn, '✗ Fiyat alınamadı', '#E11D48', false);
       } else if (updated < total) {
-        setBtnState(btn, '⚠ ' + updated + '/' + total + ' Güncellendi', '#FFB020', false);
+        setBtnState(btn, '⚠ ' + updated + '/' + total + ' Güncellendi', '#D97706', false);
       } else {
-        setBtnState(btn, '✓ ' + updated + '/' + total + ' Güncellendi', '#10D48E', false);
+        setBtnState(btn, '✓ ' + updated + '/' + total + ' Güncellendi', '#059669', false);
       }
-      setTimeout(function() { setBtnState(btn, 'Fiyat Güncelle', '#10D48E', false); }, 5000);
+      setTimeout(function() { setBtnState(btn, 'Fiyat Güncelle', '#059669', false); }, 5000);
     })
     .catch(function(err) {
       _fetchInProgress = false;
       console.error('[portfolio] fetchAllPrices error:', err);
       if (btn) {
-        setBtnState(btn, '✗ Proxy hatası', '#FF4F7B', false);
-        setTimeout(function() { setBtnState(btn, 'Fiyat Güncelle', '#10D48E', false); }, 5000);
+        setBtnState(btn, '✗ Proxy hatası', '#E11D48', false);
+        setTimeout(function() { setBtnState(btn, 'Fiyat Güncelle', '#059669', false); }, 5000);
       }
     });
 }
@@ -1082,20 +1094,20 @@ function openHolding(ticker){
       // INFO TAB
       '<div id="htab-info-content">' +
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">' +
-          '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center">' +
+          '<div style="background:var(--fill);border-radius:10px;padding:12px;text-align:center">' +
             '<div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px">Piyasa Değeri</div>' +
             '<div style="font-size:15px;font-weight:700;font-family:DM Mono,monospace">' + fmt$(h.marketValue) + '</div>' +
           '</div>' +
-          '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center">' +
+          '<div style="background:var(--fill);border-radius:10px;padding:12px;text-align:center">' +
             '<div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px">Maliyet Bazı</div>' +
             '<div style="font-size:15px;font-weight:700;font-family:DM Mono,monospace">' + fmt$(h.costBasis) + '</div>' +
           '</div>' +
-          '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center">' +
+          '<div style="background:var(--fill);border-radius:10px;padding:12px;text-align:center">' +
             '<div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px">Adet</div>' +
             '<div style="font-size:15px;font-weight:700;font-family:DM Mono,monospace">' + h.qty + '</div>' +
           '</div>' +
         '</div>' +
-        '<div style="background:rgba(255,255,255,.05);border-radius:12px;padding:14px;margin-bottom:12px">' +
+        '<div style="background:var(--fill);border-radius:12px;padding:14px;margin-bottom:12px">' +
           '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;color:var(--ink2)">Ort. Maliyet</span><span style="font-weight:700;font-family:DM Mono,monospace">$' + h.avgCost.toFixed(2) + '</span></div>' +
           '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;color:var(--ink2)">Güncel Fiyat</span><span style="font-weight:700;font-family:DM Mono,monospace">$' + h.currentPrice.toFixed(2) + '</span></div>' +
           '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;color:var(--ink2)">Fark</span><span style="font-weight:700;color:' + (h.unrealizedPnl>=0?'var(--emerald)':'var(--rose)') + '">' + (h.unrealizedPnl>=0?'+':'') + fmt$(h.unrealizedPnl) + ' (' + h.unrealizedPct.toFixed(2) + '%)</span></div>' +
@@ -1109,7 +1121,7 @@ function openHolding(ticker){
         var sells = txData.filter(function(tx){ return tx.ticker===ticker && tx.side==='sell'; }).sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
         function rowHtml(tx, accent){
           var total = tx.qty * tx.price + (tx.komisyon||0);
-          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.04);margin-bottom:6px">' +
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--fill);margin-bottom:6px">' +
             '<div style="width:36px;height:36px;border-radius:9px;background:'+accent+'22;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:'+accent+';flex-shrink:0">' + (tx.side==='buy' ? 'AL' : 'SAT') + '</div>' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:700;color:var(--ink)">' + tx.qty + ' adet @ $' + tx.price.toFixed(2) + '</div>' +
@@ -1150,7 +1162,7 @@ function openHolding(ticker){
       '<div id="htab-sell-content" style="display:none">' +
         '<div class="owner-toggle"><button class="ot-btn eda on" id="hs-ot-eda" onclick="setHTxOwner(\'sell\',\'eda\')">Eda</button><button class="ot-btn mus" id="hs-ot-mus" onclick="setHTxOwner(\'sell\',\'mustafa\')">Mustafa</button><button class="ot-btn ays" id="hs-ot-ays" onclick="setHTxOwner(\'sell\',\'ayse\')">Ayşe</button></div>' +
         '<input type="hidden" id="hs_owner" value="eda">' +
-        '<div style="background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--rose)">Mevcut pozisyon: <strong>' + h.qty + ' adet</strong></div>' +
+        '<div style="background:var(--rose-bg);border:1px solid rgba(225,29,72,.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--rose)">Mevcut pozisyon: <strong>' + h.qty + ' adet</strong></div>' +
         '<div class="frow"><div><label class="fi-lbl">Adet</label><input id="hs_qty" type="number" class="fi" placeholder="' + h.qty + '" max="' + h.qty + '"></div><div><label class="fi-lbl">Fiyat ($)</label><input id="hs_price" type="number" class="fi" placeholder="' + h.currentPrice.toFixed(2) + '" step="0.01"></div></div>' +
         '<div class="frow"><div><label class="fi-lbl">Komisyon ($)</label><input id="hs_kom" type="number" class="fi" placeholder="0.00" step="0.01"></div><div><label class="fi-lbl">Tarih</label><input id="hs_date" type="date" class="fi"></div></div>' +
         '<button class="btn-sell" data-action="htrade-sell">Satim Kaydet</button>' +
@@ -1163,13 +1175,13 @@ function openHolding(ticker){
           sectors.map(function(s){ return '<option' + (s===h.sector?' selected':'') + '>' + s + '</option>'; }).join('') +
         '</select></div>' +
         '<button class="btn-buy" data-action="hedit">Guncelle</button>' +
-        '<button class="btn-rose" data-action="hdelete" style="width:100%;margin-top:8px;background:var(--rose-bg);border:1px solid rgba(255,79,123,.2);border-radius:13px;padding:12px;color:var(--rose);font-size:14px;font-weight:700;cursor:pointer">Pozisyonu Sil</button>' +
+        '<button class="btn-rose" data-action="hdelete" style="width:100%;margin-top:8px;background:var(--rose-bg);border:1px solid rgba(225,29,72,.2);border-radius:13px;padding:12px;color:var(--rose);font-size:14px;font-weight:700;cursor:pointer">Pozisyonu Sil</button>' +
       '</div>' +
 
       // NOTE TAB
       '<div id="htab-note-content" style="display:none">' +
         '<div style="margin-bottom:10px;font-size:12px;color:var(--ink2)">Bu hisse için kişisel notunuzu yazın:</div>' +
-        '<textarea id="hn_note" style="width:100%;min-height:120px;background:rgba(255,255,255,.06);border:1px solid var(--rim2);border-radius:11px;padding:12px;color:var(--ink);font-family:DM Sans,sans-serif;font-size:13px;outline:none;resize:vertical;transition:border-color .15s" placeholder="Örn: Covered call için hedef fiyat $25, Flight 8 katalizörünü bekliyorum...">' + escHtml(tickerNotes[ticker]||'') + '</textarea>' +
+        '<textarea id="hn_note" style="width:100%;min-height:120px;background:var(--fill2);border:1px solid var(--rim2);border-radius:11px;padding:12px;color:var(--ink);font-family:DM Sans,sans-serif;font-size:13px;outline:none;resize:vertical;transition:border-color .15s" placeholder="Örn: Covered call için hedef fiyat $25, Flight 8 katalizörünü bekliyorum...">' + escHtml(tickerNotes[ticker]||'') + '</textarea>' +
         '<button class="btn-buy" data-action="hnote-save" style="margin-top:8px">💾 Notu Kaydet</button>' +
         (tickerNotes[ticker] ? '<button class="btn-ghost" data-action="hnote-delete">Notu Sil</button>' : '') +
       '</div>' +
@@ -1332,8 +1344,8 @@ function renderPortfolio(){
       var anyPre  = holdings.some(function(h){ var dc=dayChange[h.ticker]; return dc && dc.preMarketPrice  > 0 && (dc.marketState==='PRE'  || dc.marketState==='PREPRE'); });
       var anyPost = holdings.some(function(h){ var dc=dayChange[h.ticker]; return dc && dc.postMarketPrice > 0 && (dc.marketState==='POST' || dc.marketState==='POSTPOST' || dc.marketState==='CLOSED'); });
       var mktBadge = '';
-      if(anyPre)  mktBadge = ' &nbsp;<span style="font-size:10px;background:rgba(255,176,32,.15);color:var(--amber);padding:1px 6px;border-radius:5px;font-weight:700">PRE MKT</span>';
-      if(anyPost) mktBadge = ' &nbsp;<span style="font-size:10px;background:rgba(56,189,248,.12);color:var(--sky);padding:1px 6px;border-radius:5px;font-weight:700">POST MKT</span>';
+      if(anyPre)  mktBadge = ' &nbsp;<span style="font-size:10px;background:rgba(217,119,6,.15);color:var(--amber);padding:1px 6px;border-radius:5px;font-weight:700">PRE MKT</span>';
+      if(anyPost) mktBadge = ' &nbsp;<span style="font-size:10px;background:rgba(2,132,199,.12);color:var(--sky);padding:1px 6px;border-radius:5px;font-weight:700">POST MKT</span>';
       hs.innerHTML='Unrealized P&L &nbsp;|&nbsp; Bugün: <span style="color:'+dcColor+';font-weight:700">'+dcSign+dc$+' ('+dcSign+Math.abs(totalDayChangePct).toFixed(2)+'%)</span>'+mktBadge;
     } else {
       hs.textContent='Unrealized P&L';
@@ -1385,8 +1397,8 @@ function renderPortfolio(){
     var pnlColor=h.unrealizedPnl>=0?'var(--emerald)':'var(--rose)';
     var weightPct=totalMV>0?h.marketValue/totalMV*100:0;
     var sc=SECTOR_COLORS[h.sector]||SECTOR_COLORS['Diğer'];
-    var ccReminder = h.qty >= 100 ? '<div style="margin:0 16px 10px;background:rgba(167,139,250,0.10);border:1px solid rgba(167,139,250,0.25);border-radius:9px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:13px">📣</span><span style="font-size:11px;color:#A78BFA;font-weight:600">'+Math.floor(h.qty/100)+' kontrat Covered Call yazılabilir</span></div>' : '';
-    var noteStr = tickerNotes[h.ticker] ? '<div style="margin:0 16px 10px;background:rgba(255,176,32,0.07);border:1px solid rgba(255,176,32,0.18);border-radius:9px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:13px">📝</span><span style="font-size:11px;color:var(--amber);font-weight:500;flex:1;word-break:break-word">'+escHtml(tickerNotes[h.ticker])+'</span></div>' : '';
+    var ccReminder = h.qty >= 100 ? '<div style="margin:0 16px 10px;background:rgba(124,58,237,0.10);border:1px solid rgba(124,58,237,0.25);border-radius:9px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:13px">📣</span><span style="font-size:11px;color:#7C3AED;font-weight:600">'+Math.floor(h.qty/100)+' kontrat Covered Call yazılabilir</span></div>' : '';
+    var noteStr = tickerNotes[h.ticker] ? '<div style="margin:0 16px 10px;background:rgba(217,119,6,0.07);border:1px solid rgba(217,119,6,0.18);border-radius:9px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:13px">📝</span><span style="font-size:11px;color:var(--amber);font-weight:500;flex:1;word-break:break-word">'+escHtml(tickerNotes[h.ticker])+'</span></div>' : '';
     return '<div class="hcard" onclick="openHolding(\'' + h.ticker + '\')">'+
       '<div class="hc-head">'+
         '<div class="hc-color" style="background:'+c+'"></div>'+
@@ -1423,7 +1435,7 @@ function renderPortfolio(){
               var ep = dc.preMarketPrice; var ec = dc.preMarketChangePct || 0;
               var esign = ec >= 0 ? '+' : '';
               var ecol = ec >= 0 ? 'var(--emerald)' : 'var(--rose)';
-              extHtml = '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:rgba(255,176,32,.10);border:1px solid rgba(255,176,32,.2);border-radius:6px;padding:2px 6px">'
+              extHtml = '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:rgba(217,119,6,.10);border:1px solid rgba(217,119,6,.2);border-radius:6px;padding:2px 6px">'
                 + '<span style="font-size:9px;font-weight:700;color:var(--amber)">PRE</span>'
                 + '<span style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;color:'+ecol+'">$'+ep.toFixed(2)+' ('+esign+ec.toFixed(2)+'%)</span>'
                 + '</div>';
@@ -1431,7 +1443,7 @@ function renderPortfolio(){
               var ep = dc.postMarketPrice; var ec = dc.postMarketChangePct || 0;
               var esign = ec >= 0 ? '+' : '';
               var ecol = ec >= 0 ? 'var(--emerald)' : 'var(--rose)';
-              extHtml = '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:6px;padding:2px 6px">'
+              extHtml = '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:rgba(2,132,199,.08);border:1px solid rgba(2,132,199,.2);border-radius:6px;padding:2px 6px">'
                 + '<span style="font-size:9px;font-weight:700;color:var(--sky)">POST</span>'
                 + '<span style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;color:'+ecol+'">$'+ep.toFixed(2)+' ('+esign+ec.toFixed(2)+'%)</span>'
                 + '</div>';
@@ -1473,7 +1485,7 @@ function renderDist(){
   if(pieChartInst) pieChartInst.destroy();
   pieChartInst=new Chart(ctx,{
     type:'doughnut',
-    data:{labels:labels,datasets:[{data:data,backgroundColor:colors.map(function(col){return col+'CC';}),borderColor:colors,borderWidth:2,hoverOffset:4}]},
+    data:{labels:labels,datasets:[{data:data,backgroundColor:colors,borderColor:'#FFFFFF',borderWidth:2.5,hoverOffset:5}]},
     options:{responsive:false,cutout:'62%',plugins:{legend:{display:false}}}
   });
 
@@ -1571,7 +1583,7 @@ document.addEventListener('click',function(e){
 var curVergiOwner = 'eda';
 function switchVergiTab(owner){
   curVergiOwner = owner;
-  var tabs = {eda:['vtab-eda','rgba(56,189,248,.15)','var(--sky)'],mustafa:['vtab-mus','rgba(167,139,250,.15)','var(--violet)'],ayse:['vtab-ays','rgba(52,211,153,.15)','var(--mint)']};
+  var tabs = {eda:['vtab-eda','rgba(2,132,199,.15)','var(--sky)'],mustafa:['vtab-mus','rgba(124,58,237,.15)','var(--violet)'],ayse:['vtab-ays','rgba(13,148,136,.15)','var(--mint)']};
   Object.keys(tabs).forEach(function(o){
     var el=document.getElementById(tabs[o][0]);
     if(el){ el.style.background=owner===o?tabs[o][1]:'transparent'; el.style.color=owner===o?tabs[o][2]:'var(--ink3)'; }
@@ -1722,14 +1734,14 @@ function renderVergi(){
     // Hesaplanan değer (tooltip için)
     var calcTxt=r.matrahTRY!==null?fmtTRY(r.matrahTRY):'—';
     // Manuel badge
-    var manBadge=hasOvr?'<span style="font-size:8px;background:rgba(251,191,36,.18);color:var(--amber);border-radius:3px;padding:0 3px;margin-left:2px;vertical-align:middle" title="Manuel girildi">M</span>':'';
+    var manBadge=hasOvr?'<span style="font-size:8px;background:rgba(217,119,6,.18);color:var(--amber);border-radius:3px;padding:0 3px;margin-left:2px;vertical-align:middle" title="Manuel girildi">M</span>':'';
     // Edit butonu (kalem)
     var editBtn='<button onclick="vergiOvrEdit('+s.id+')" style="background:none;border:none;cursor:pointer;font-size:10px;padding:0 2px;opacity:.45;vertical-align:middle" title="Manuel matrah gir (endeksleme)">✏️</button>';
     // Clear butonu (sadece override varsa)
     var clearBtn=hasOvr?'<button onclick="vergiOvrClear('+s.id+')" style="background:none;border:none;cursor:pointer;font-size:13px;line-height:1;padding:0 1px;color:var(--ink3);vertical-align:middle" title="Hesaplananı kullan ('+calcTxt+')">×</button>':'';
     // YİÜFE rozeti (endeksleme uygulandıysa)
     var yufeBadge=(!hasOvr&&r.yufeApplied&&r.yufeAvgRatio)
-      ?'<span style="font-size:8px;background:rgba(52,211,153,.15);color:var(--mint);border-radius:3px;padding:0 3px;margin-left:2px;vertical-align:middle" title="YİÜFE endeksleme uygulandı (×'+r.yufeAvgRatio.toFixed(4)+')">YE×'+r.yufeAvgRatio.toFixed(3)+'</span>'
+      ?'<span style="font-size:8px;background:rgba(13,148,136,.15);color:var(--mint);border-radius:3px;padding:0 3px;margin-left:2px;vertical-align:middle" title="YİÜFE endeksleme uygulandı (×'+r.yufeAvgRatio.toFixed(4)+')">YE×'+r.yufeAvgRatio.toFixed(3)+'</span>'
       :'';
     // Matrah hücresi içeriği
     var matrahInner=r.missingBuyKur&&!hasOvr
@@ -1737,7 +1749,7 @@ function renderVergi(){
       :mt+yufeBadge+manBadge+editBtn+clearBtn;
     // Elle lot seçimi rozeti (FIFO yerine broker'da lot seçilmişse)
     var lotBadge=r.lotSecimi
-      ?'<span style="font-size:8px;background:rgba(167,139,250,.18);color:var(--violet);border-radius:3px;padding:0 3px;margin-left:4px;vertical-align:middle" title="Satışta elle lot seçimi yapıldı (FIFO değil)">LOT</span>'
+      ?'<span style="font-size:8px;background:rgba(124,58,237,.18);color:var(--violet);border-radius:3px;padding:0 3px;margin-left:4px;vertical-align:middle" title="Satışta elle lot seçimi yapıldı (FIFO değil)">LOT</span>'
       :'';
     // Alış tarih aralığı (tüketilen lotlar)
     var bd=r.buyDates||[];
@@ -1852,6 +1864,138 @@ function vergiOvrClear(id){
   delete vergiOverride[id];
   saveVergiOverride();
   renderVergi();
+}
+
+// ═══════════════════════════════════════
+// VERİ YÖNETİMİ — Yedek al / Yedek yükle
+// ═══════════════════════════════════════
+var BACKUP_KEYS = [LS_TX, LS_KUR, LS_TAX, LS_PRICE, LS_NOTES, LS_DAYCHANGE,
+                   LS_SEED_VER, LS_VERGI_OVERRIDE, LS_YUFE];
+
+function buildBackup(){
+  var data={};
+  BACKUP_KEYS.forEach(function(k){
+    var v=null; try{ v=localStorage.getItem(k); }catch(e){}
+    if(v!==null) data[k]=v;
+  });
+  return {
+    format:'hisse-portfoyu-backup',
+    version:1,
+    appVersion:(window.APP_VERSION||''),
+    createdAt:new Date().toISOString(),
+    counts:{
+      islem:(txData||[]).length,
+      kur:Object.keys(kurData||{}).length,
+      yufe:Object.keys(yufeData||{}).length,
+      matrahOverride:Object.keys(vergiOverride||{}).length
+    },
+    data:data
+  };
+}
+
+function yedekAl(){
+  try{
+    var b=buildBackup();
+    var blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});
+    var d=new Date();
+    var pad=function(n){return (n<10?'0':'')+n;};
+    var name='portfoy-yedek-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+
+             '-'+pad(d.getHours())+pad(d.getMinutes())+'.json';
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download=name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1500);
+  }catch(e){ alert('Yedek oluşturulamadı: '+e.message); }
+}
+
+function yedekPanoyaKopyala(){
+  var txt=JSON.stringify(buildBackup());
+  function ok(){ alert('Yedek panoya kopyalandı.\nBir nota yapıştırıp saklayabilirsin.'); }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok).catch(function(){ fallback(); });
+  } else { fallback(); }
+  function fallback(){
+    var ta=document.createElement('textarea');
+    ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); ok(); }catch(e){ alert('Kopyalanamadı'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function yedekYukleDosya(input){
+  var f=input.files&&input.files[0];
+  if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(){ yedekUygula(String(rd.result)); };
+  rd.onerror=function(){ alert('Dosya okunamadı'); };
+  rd.readAsText(f);
+  input.value='';
+}
+
+function yedekYukleMetin(){
+  var t=prompt('Yedek JSON metnini yapıştır:');
+  if(t) yedekUygula(t);
+}
+
+function yedekUygula(raw){
+  var b;
+  try{ b=JSON.parse(raw); }catch(e){ alert('Geçersiz JSON — dosya bozuk olabilir.'); return; }
+  if(!b||b.format!=='hisse-portfoyu-backup'||!b.data){
+    alert('Bu dosya bu uygulamanın yedeği değil.'); return;
+  }
+  var c=b.counts||{};
+  var msg='YEDEK YÜKLENECEK\n\n'+
+          'Oluşturulma: '+(b.createdAt?b.createdAt.substring(0,16).replace('T',' '):'?')+'\n'+
+          'İşlem: '+(c.islem!=null?c.islem:'?')+'\n'+
+          'Kur kaydı: '+(c.kur!=null?c.kur:'?')+'\n'+
+          'YİÜFE ayı: '+(c.yufe!=null?c.yufe:'?')+'\n'+
+          'Manuel matrah: '+(c.matrahOverride!=null?c.matrahOverride:'?')+'\n\n'+
+          'MEVCUT VERİLERİNİN ÜZERİNE YAZILACAK.\nDevam edilsin mi?';
+  if(!confirm(msg)) return;
+  try{
+    BACKUP_KEYS.forEach(function(k){
+      if(Object.prototype.hasOwnProperty.call(b.data,k)) localStorage.setItem(k,b.data[k]);
+    });
+    alert('Yedek yüklendi. Uygulama yeniden başlatılıyor.');
+    location.replace(location.pathname+'?r='+Date.now());
+  }catch(e){ alert('Yedek yüklenemedi: '+e.message); }
+}
+
+function openVeriMenu(){
+  var b=buildBackup(), c=b.counts;
+  var ov=document.createElement('div'); ov.className='overlay';
+  ov.onclick=function(e){ if(e.target===ov) document.body.removeChild(ov); };
+  function stat(l,v){
+    return '<div style="text-align:center;padding:10px 6px;background:var(--s2);border-radius:12px">'+
+      '<div style="font-size:17px;font-weight:800;color:var(--ink)">'+v+'</div>'+
+      '<div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-top:3px">'+l+'</div></div>';
+  }
+  function btn(txt,fn,style){
+    return '<button onclick="'+fn+'" style="width:100%;border-radius:12px;padding:13px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;'+style+'">'+txt+'</button>';
+  }
+  ov.innerHTML='<div class="sheet">'+
+    '<div class="sheet-handle"></div>'+
+    '<div class="sheet-title">Veri Yönetimi</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin:14px 0 18px">'+
+      stat('İşlem',c.islem)+stat('Kur',c.kur)+stat('YİÜFE',c.yufe)+stat('Matrah',c.matrahOverride)+
+    '</div>'+
+    '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin-bottom:9px">Yedek Al</div>'+
+    btn('⬇️  Dosya olarak indir','yedekAl()','background:var(--emerald-bg);border:1px solid rgba(5,150,105,.25);color:var(--emerald)')+
+    btn('📋  Panoya kopyala','yedekPanoyaKopyala()','background:var(--s2);border:1px solid var(--rim);color:var(--ink2)')+
+    '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin:18px 0 9px">Yedek Yükle</div>'+
+    '<label style="display:block;width:100%;text-align:center;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;background:var(--sky-bg);border:1px solid rgba(2,132,199,.25);color:var(--sky)">⬆️  Dosyadan yükle'+
+      '<input type="file" accept="application/json,.json" onchange="yedekYukleDosya(this)" style="display:none">'+
+    '</label>'+
+    btn('📝  Metinden yükle','yedekYukleMetin()','background:var(--s2);border:1px solid var(--rim);color:var(--ink2)')+
+    '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin:18px 0 9px">Uygulama</div>'+
+    '<div style="font-size:11px;color:var(--ink3);text-align:center;margin-bottom:10px">Sürüm '+(window.APP_VERSION||'?')+'</div>'+
+    btn('🔄  Güncellemeyi zorla','forceUpdate()','background:var(--s2);border:1px solid var(--rim);color:var(--ink2)')+
+    btn('🗑️  Tüm verileri sıfırla','resetAll()','background:var(--rose-bg);border:1px solid rgba(225,29,72,.25);color:var(--rose)')+
+    '<button class="btn-ghost" onclick="this.closest(\'.overlay\').remove()">Kapat</button>'+
+  '</div>';
+  document.body.appendChild(ov);
 }
 
 // ── Guncellemeyi zorla: SW kaydini ve tum cache'leri sil, yeniden yukle ──
@@ -2137,7 +2281,7 @@ function renderMetrics(){
 
   function mCard(label, value, sub, color){
     color = color||'var(--sky)';
-    return '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+    return '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:14px 16px;box-shadow:var(--sh1)">'+
       '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin-bottom:6px">'+label+'</div>'+
       '<div style="font-size:20px;font-weight:800;font-family:DM Mono,monospace;color:'+color+'">'+value+'</div>'+
       (sub?'<div style="font-size:10px;color:var(--ink3);margin-top:3px">'+sub+'</div>':'')+'</div>';
@@ -2169,7 +2313,7 @@ function renderMetrics(){
 
   mc.innerHTML =
     // TWR card
-    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:var(--sh1)">'+
       '<div style="padding:12px 16px 0;font-size:11px;font-weight:800;color:var(--ink2);letter-spacing:.3px">⏱ Time Weighted Return</div>'+
       '<div style="display:flex;gap:0">'+
         twrCell('MTD', twrMTD)+
@@ -2190,10 +2334,10 @@ function renderMetrics(){
     '</div>'+
 
     // Risk section
-    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:var(--sh1)">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
         '<div style="font-size:13px;font-weight:800;color:var(--ink)">⚖️ Risk Analizi</div>'+
-        '<div style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06);color:'+riskColor+'">'+riskLabel+'</div>'+
+        '<div style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--fill2);color:'+riskColor+'">'+riskLabel+'</div>'+
       '</div>'+
       rankBar('Konsantrasyon (HHI)', hhiPct.toFixed(1)+'%', riskColor, 'Düşük = iyi çeşitlendirme. <10%: iyi, 10-20%: orta, >20%: riskli')+
       rankBar('En Büyük Pozisyon', maxWeight.toFixed(1)+'%', maxWeight>25?'var(--rose)':maxWeight>15?'var(--amber)':'var(--emerald)', topHolder?topHolder.ticker+' ('+fmt$(topHolder.marketValue)+')':'')+
@@ -2202,20 +2346,20 @@ function renderMetrics(){
 
     // Covered Call opportunities
     (ccOpp.length?
-    '<div style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.22);border-radius:14px;padding:16px;margin-bottom:16px">'+
-      '<div style="font-size:13px;font-weight:800;color:#A78BFA;margin-bottom:12px">📣 Covered Call Fırsatları</div>'+
+    '<div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.22);border-radius:14px;padding:16px;margin-bottom:16px">'+
+      '<div style="font-size:13px;font-weight:800;color:#7C3AED;margin-bottom:12px">📣 Covered Call Fırsatları</div>'+
       ccOpp.map(function(h){
         var contracts = Math.floor(h.qty/100);
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(167,139,250,0.12)">'+
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(124,58,237,0.12)">'+
           '<div><div style="font-size:13px;font-weight:700;color:var(--ink)">'+h.ticker+'</div>'+
           '<div style="font-size:10px;color:var(--ink3)">'+h.qty+' adet · '+fmt$(h.marketValue)+'</div></div>'+
-          '<div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#A78BFA">'+contracts+' kontrat</div>'+
+          '<div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#7C3AED">'+contracts+' kontrat</div>'+
           '<div style="font-size:10px;color:var(--ink3)">yazılabilir</div></div></div>';
       }).join('')+
     '</div>' : '')+
 
     // Best performers
-    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:var(--sh1)">'+
       '<div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px">🏆 En İyi Performans</div>'+
       best3.map(function(h){
         var c=tickerColor(h.ticker);
@@ -2230,7 +2374,7 @@ function renderMetrics(){
 
     // Worst performers
     (worst3.filter(function(h){return h.unrealizedPnl<0;}).length?
-    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.2)">'+
+    '<div style="background:var(--s1);border:1px solid var(--rim);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:var(--sh1)">'+
       '<div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px">📉 En Kötü Performans</div>'+
       worst3.filter(function(h){return h.unrealizedPnl<0;}).map(function(h){
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rim)">'+
@@ -2259,7 +2403,7 @@ function ibkrImport(){
     '<div style="font-size:13px;color:var(--ink2);margin-bottom:8px;line-height:1.6;text-align:left">'+
       'PDF statement\'dan <strong>14 hisse</strong> bulundu (13 Mar 2026):'+
     '</div>'+
-    '<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px;margin-bottom:16px;max-height:200px;overflow-y:auto;text-align:left">'+
+    '<div style="background:var(--fill);border-radius:10px;padding:10px;margin-bottom:16px;max-height:200px;overflow-y:auto;text-align:left">'+
     IBKR_POSITIONS.map(function(p){
       var pnl=(p.currentPrice-p.avgCost)*p.qty;
       var c=pnl>=0?'var(--emerald)':'var(--rose)';
@@ -2311,7 +2455,7 @@ function ibkrImport(){
 
 // ─── INIT ─────────────────────────────
 var _d=new Date(); document.getElementById('todayDate').textContent=_d.getDate()+' '+['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][_d.getMonth()]+' '+_d.getFullYear();
-Chart.defaults.color='#8892A4';
+Chart.defaults.color='#64748B';
 Chart.defaults.font.family="'DM Sans', sans-serif";
 renderPortfolio();
 // Auto-refresh prices on load
